@@ -1,0 +1,462 @@
+目的： 将常见的文档类型（如pdf, ppt, docx, html等）转换成markdown, 便于LLM处理。
+
+有一些开源的方案：
+https://github.com/docling-project/docling
+https://github.com/opendatalab/mineru
+https://github.com/microsoft/markitdown
+https://github.com/opendataloader-project/opendataloader-pdf
+从中挑选一个项目， 以此为基础， 构建一个项目， 让用户非常容易的转换文档。
+
+目前的问题： 如docling， 对很长的pdf的处理不好，容易卡死机器。需要用户设置很多参数。 对很多research paper(双排文字)处理也不好。 考虑一下：文档里面的图片怎么处理（要不要使用视觉模型？）？
+
+理想的状态： 用户指定一个目录，里面有各种各样的文档， 一键可以将所有文档转换成markdown.
+
+
+
+进度：
+1. 尝试用多样的文件来测试转换器在不同情况下的性能，
+2. 根据结果列出缺陷，并且列出可优化项，并且尝试优化
+3. 手动对比结果，再次列出转化缺陷，再次优化
+4. 尝试引入视觉模型，看是否能解决图片问题～～～～～
+    
+
+
+
+
+
+优化目标：
+    让用户不用懂参数
+    让长 PDF 不会卡死机器
+    让失败文件不会中断整个任务
+    让输出更适合 LLM/RAG
+    让不同文档自动走不同处理策略
+
+方案：
+    短 PDF → 直接 docling
+    长 PDF → 分页 / 分块转换
+    双栏 research paper → 使用 MinerU 或开启 layout/OCR 策略
+    普通 docx/ppt/html → 使用 MarkItDown？？？？
+    图片很多的 PDF → 判断是否需要 OCR 或视觉模型？？？？
+    转换失败 → 自动降级到备用 converter ？？？？
+
+
+
+步骤：
+1. 先选一个主转换器
+2. 用多种类型文档 benchmark 它，测试：
+    是否成功转换
+    运行时间
+    CPU / 内存占用
+    是否卡死
+    输出 Markdown 字数
+    标题结构是否保留
+    表格是否保留
+    图片是否被处理
+    双栏顺序是否混乱
+    是否适合后续 LLM/RAG 使用3. 总结 converter 的具体问题
+3. 总结 converter 的具体问题
+4. 在转换器外面包一层自己的系统，依次解决这些问题
+
+
+
+
+folder/
+├── main.py
+├── test_docs/
+│   ├── dataset_manifest.csv
+│   ├── html/
+│   ├── office/
+│   ├── pdf_chart_heavy/
+│   ├── pdf_image/
+│   ├── pdf_long/
+│   ├── pdf_plain/
+│   ├── pdf_two_column/
+│   ├── PPTX/
+└── outputs/
+
+
+
+
+
+你是否可以为我写一个通用于4个转换器的script，帮我测试运行状态与耗时、内存和 CPU、输出内容统计这3部分
+比如说，如果我要测试这几个转换器，从最开始，我应该怎么做？
+我是否应该为每个转换器单独配置虚拟环境？
+
+
+
+
+
+
+运行步骤(docker)：
+    打开docker
+    chmod +x run_with_docker.sh
+    ./run_with_docker.sh
+
+
+
+
+
+
+
+
+
+
+
+-- 前面的pptx、html、office都是一瞬间完成。
+pptx：一瞬间完成。里面没有图片
+
+html：一瞬间完成。完好
+
+office：一瞬间完成。无法完整继承排版：（数学公式完好）
+    - 有着加粗和字体的，位于最上方的标题和副标题在md的preview中不显眼，没有被转化成title的格式
+    - 作为bullet的[0001]被直接转变成bullet
+    - table在md里看起来能够看出来是table，但在preview模式里拍排版混乱，无法看出来是table
+    - image一样无法被转化，只留有<!-- image -->作为代替
+
+pdf_chart_heavy：
+    - 特别慢，甚至3-4分钟才能转化1个
+    - 除了图片外，气泡图、柱状图也无法被转化，被当作image了
+
+pdf_long【时间？？？】
+
+pdf_plain【时间？？？】
+    - table被完好转化，图片仍然不行
+
+pdf_two_column【时间？？？】
+    - 图片仍然不行
+    - 公式字母能够转化，但没有在pdf上那么容易区分
+    - 简单的公式可以转化。但较为复杂的公式没有被转化，其中的数学符号也是，或者排版失控，
+
+
+
+
+1. PDF 是主要瓶颈
+docx / pptx / html 基本都在 2–3 秒左右完成，而 PDF 经常需要几十秒到几百秒。
+
+2. 长 PDF / 图片型 PDF / 图表多 PDF 容易 timeout
+这说明转换器不是完全不能处理 PDF，而是遇到某些 PDF 时无法稳定完成
+    - 在 file_analyzer.py 里先分析 PDF：页数，文件大小，是否图片很多，是否扫描件，是否双栏，是否图表密集
+    - 然后在 strategy_selector.py 里决定策略：
+        短 PDF → 正常转换
+        长 PDF → 分页/分块转换
+        图片型 PDF → 开 OCR 或走备用 converter
+        图表多 PDF → 降低处理精度，或者跳过图片深度解析
+
+3. 资源占用很高，一个文件失败影响整个批量任务
+如果用户一键转换整个目录，不应该因为一个 PDF 失败导致整个任务卡住。
+    - 一个文件一个 subprocess，失败后记录报告，不中断整体任务。
+
+4. 图片处理不完整
+    - 做一个 image_handler.py，是否用视觉模型可以做成可选参数，普通用户默认 extract，需要 LLM/RAG 高质量理解时开启 vlm-caption
+        1. 抽取图片到 output/images/
+        2. 在 Markdown 中插入图片链接
+        3. 给图片生成占位说明
+        4. 可选：调用视觉模型生成 image caption
+
+5. 输出 Markdown 可能过大，不适合直接给 LLM
+有些 PDF 输出的 Markdown 很大，例如：long_02.pdf → 645,092 characters
+这类输出即使转换成功，也不能直接塞给 LLM。后续还需要 chunking、清洗、去重、结构化。
+
+6.部分结构保留不理想
+有些 DOCX / HTML 的 heading_count 是 0，说明标题层级可能没有被很好地转换成 Markdown heading。
+    - 识别大写短行作为标题、识别编号标题，例如 1. Introduction、识别 PPTX slide title、识别 HTML h1/h2/h3、识别 DOCX paragraph style
+    - 然后补成：## Section Title
+
+
+
+
+
+
+
+出现的问题：
+
+1. 图片处理弱   【引入视觉模型处理图片，比如gpt-4o？】
+几乎所有类型里都出现了这个问题：
+    Office 图片不行，只剩 <!-- image -->
+    PDF 图片不行
+    图表类内容也被当成 image
+这说明当前 Docling 输出里，图片更多只是“占位”，而不是可用内容。
+
+
+2. 结构化标题恢复不稳定
+特别是在 Office 文档中：
+    原文视觉上明显是标题
+    但没有被转成 Markdown heading
+这会直接影响：
+    preview 可读性
+    chunking
+    RAG 按章节切分
+
+
+3. 复杂视觉内容难处理
+包括：
+    图表
+    复杂公式    
+    数学符号
+    图片
+这类内容一旦不是纯文本，Docling 当前表现就明显变差。
+
+
+4. 性能在复杂 PDF 上退化明显
+至少 pdf_chart_heavy 已经证明：
+    并不是所有文件都快
+    一旦页面复杂，耗时会迅速上升
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+【全版本对比分析】
+对比和分析下面这些编号测试和这次测试的报告和log，你需要查看github上的代码版本来的得到更新内容，根据这些找出错误和性能下降的原因，或者可改进的地方，给出修复方案
+note：由于有多次版本更新，所以你需要分析有哪些更新是有必要的，哪些是没有必要的
+note：你的修复和更新方案必须基于“尽可能完好地转换文件，最大可能地保留原文件的信息”这个目标，而不是单纯的提升性能
+大致的更新内容：
+001: 在本机跑而非docker，所以性能数据只能用作参考；修复了formula-not-decoded、math notation、paper_01 首页仍有双栏错序
+    - 2364s，全部成功
+    - github更新版本：25f57fb689dd1056134b998bf1435178235b8b4e
+002: 错误路线，无视它
+003: 回到docker环境，改success判定，去内存限制等
+    - 4003s，1失败
+    - github更新版本：c161187ed68661bf4c7380c8481cca46f9df9833
+004: 把 chunking 真正做进 DoclingAdapter、让 retry 变成“降级重试”等
+    - 969s
+005: 修正真实页数与chunk plan的对齐,pdf_image1.pdf 的越界问题、backend-text不能只看“有没有足够文本”等
+    - 1426s，1失败
+    - github更新版本：dd9db692858b02a66555b59bc198138a7f3fbf9c
+006: 修复了pdf_image1.pdf的chunk页数越界IndexError，调整backend-text触发规则以避免把chart_02.pdf重新打成timeout
+    - 1861s，1失败
+    - github更新版本：5161ba20ac480da5f589fc1ba90b4bc98bd18c90
+007: 给长PDF加失败后强制 backend-text分支，backend-text判定加文档类型特化，增加chunk级质量回验
+    - 当前的本地代码
+
+根据现有的代码版本，全面对比github上006版本的md和原文件，检查有什么转换错误。如果有，就把它的修复方案加入现有的修复方案中。然后列出必须执行的方案和可选执行的方案
+
+
+  5. office_03.docx 的数学公式出现内容污染。
+     outputs/markdown/office/office_003.md:51 里的公式是：
+     ... x^{k}asdaa^{n-k}
+     这里的 asdaa 明显是错误插入，前面同一个公式在 outputs/markdown/office/office_003.md:15 和 outputs/
+     markdown/office/office_003.md:27 都是正常的 x^{k}a^{n-k}。这说明公式解析不是稳定错误，而是局部污染。
+
+  6. pdf_plain_002 有明显文本清洗问题，包含损坏字符、错误 URL 表达和脏符号。
+     在 outputs/markdown/pdf_plain/pdf_plain_002.md:1659 到 outputs/markdown/pdf_plain/
+     pdf_plain_002.md:1663：
+        - https: 被拆开
+        - URL 主体被包进了数学块 $$//www...$$
+        - ### 被当成正文/标题边界混用
+            另外 outputs/markdown/pdf_plain/pdf_plain_002.md:1692 起有大量 - [ ]  这种重复 checkbox 符号，
+            outputs/markdown/pdf_plain/pdf_plain_002.md:1782 还有控制字符污染。这个文件整体可读，但不算干净。
+
+  7. PPTX_002 有结构性噪声，出现空标题和大量孤立数字。
+     outputs/markdown/PPTX/PPTX_002.md:122、outputs/markdown/PPTX/PPTX_002.md:148、outputs/markdown/PPTX/
+     PPTX_002.md:178 等位置反复出现单独的 # 空标题；同一文件还夹杂很多孤立数字行。内容大体还在，但
+     markdown 结构比较脏。
+
+
+
+
+
+
+
+
+
+
+
+【修改1】：math notation和
+这个项目的目的：将常见的文档类型（如pdf, ppt, docx, html等）转换成markdown, 便于LLM处理。这个项目以docling项目为基础， 构建一个项目， 让用户非常容易的转换文档。
+目前基本运行顺利，测试几乎通过。
+通过paper_01，我发现了这几个问题：
+1. 第一页右栏的第一段落被当作左栏的第二段落了，你的没有规划好（不过paper_02没有这个错误）
+2. 有很多 <!-- formula-not-decoded -->，将这这些公式也转换
+3. math notation也没有完全转换，例如转换得到的“{ q l,k , w l,k }”中“q l,k”和“w l,k ”应该是2个notation，但转换后完全看不出来
+note：这些问题可能不只发生在双栏pdf中，你也需要照顾到其他类别
+首先阅读这个项目，分析这几个问题可以如何改进，并且给出方案
+
+这次主要解决了三件事。第一，<!-- formula-not-decoded --> 不再直接落盘，公式会优先用 Docling 公式结果，拿不到时回退到 orig 文本再
+  转成公式块。    第二，新增了 processors/math_utils.py:1，把 q l,k、w l,k、x i [ k ] 这类 notation 做更可靠的数学归一化，并让
+  processors/structure_repair.py:5 复用同一套规则。   第三，第一页前言区增加了结构化修复，把 paper_01 里那段误插到摘要前的右栏正文移
+  回到引言正文之后。样例复查时，paper_01 的 formula-not-decoded 已经是 0，第一页摘要/Index Terms/Introduction 顺序也恢复到更合理的
+  状态。
+
+收尾：对比并且分析001编号和这次测试的log和report，这次改动是否让性能和结果有所变化，如果变差了就分析原因
+
+
+【修改2】：阅读链接，还有什么我可以用到的功能
+
+
+
+
+
+
+
+
+
+
+这个项目的目的：将常见的文档类型（如pdf, ppt, docx, html等）转换成markdown, 便于LLM处理。这个项目以docling项目为基础， 构建一个项目， 让用户非常容易的转换文档。
+improve.txt内有着需要完善和改进的需求，你需要按照里面的描述来完善和改进。里面包含了几个需要改进的点，以及可能的参考目录
+note：你不用按照参考目录来改，你可以自由发挥，只要能满足improve.txt里的需求，并且逻辑清晰。
+note：你没必要彻底完成第3点，你可以只完成它的“默认模式”
+
+project_root/
+├── main.py                          # 项目统一入口；接收用户输入目录，启动整套转换流程
+├── config.py                        # 全局配置；默认参数、路径、超时、是否启用 OCR/VLM 等
+├── requirements.txt                 # Python 依赖
+├── README.md                        # 项目说明、安装方法、使用示例
+│
+├── adapters/                        # 各种 converter 的适配层
+│   ├── __init__.py
+│   ├── base_adapter.py              # 转换器统一接口定义
+│   ├── docling_adapter.py           # 对接 Docling
+│   ├── mineru_adapter.py            # 对接 MinerU
+│   ├── markitdown_adapter.py        # 对接 MarkItDown
+│   └── opendataloader_adapter.py    # 对接 OpenDataLoader PDF
+│
+├── pipeline/                        # 主流程编排层
+│   ├── __init__.py
+│   ├── batch_runner.py              # 批量处理入口；遍历目录、分发任务
+│   ├── task_executor.py             # 单文件任务执行；调用 subprocess、控制超时和失败处理
+│   ├── strategy_selector.py         # 根据文件特征选择处理策略
+│   └── result_collector.py          # 汇总每个文件的输出、状态和统计结果
+│
+├── analyzers/                       # 文件分析模块
+│   ├── __init__.py
+│   ├── file_analyzer.py             # 分析文件大小、页数、类型、是否长文档
+│   ├── pdf_analyzer.py              # 分析 PDF：双栏、扫描件、图表密度、图片比例等
+│   └── content_detector.py          # 检测公式、表格、图片、标题等内容特征
+│
+├── processors/                      # 转换后的增强与修复模块
+│   ├── __init__.py
+│   ├── image_handler.py             # 图片抽取、图片链接插入、占位说明、可选 VLM caption
+│   ├── structure_repair.py          # 修复标题层级、列表、表格、引用块结构
+│   ├── special_block_handler.py     # 处理复杂公式、图表、双栏块、特殊区域
+│   ├── markdown_cleaner.py          # 清理噪声、空行、页眉页脚、异常换行
+│   └── semantic_enhancer.py         # 可选语义增强；为图表/图片/特殊块补充说明
+│
+├── utils/                           # 通用工具函数
+│   ├── __init__.py
+│   ├── io_utils.py                  # 文件读写、路径处理、输出目录创建
+│   ├── log_utils.py                 # 日志记录
+│   ├── subprocess_utils.py          # subprocess 启动、超时、异常捕获
+│   ├── markdown_utils.py            # Markdown 统计与格式辅助函数
+│   └── report_utils.py              # 生成 CSV / JSON / summary 报告
+│
+├── benchmarks/                      # benchmark 与测试相关
+│   ├── __init__.py
+│   ├── benchmark_runner.py          # 跑 benchmark，统计耗时、成功率、输出情况
+│   ├── benchmark_metrics.py         # 定义成功率、耗时、图片数、标题数等指标
+│   └── manual_review_template.csv   # 人工评审模板
+│
+├── test_docs/                       # 测试文档目录
+│   ├── html/                        # HTML 样本
+│   ├── office/                      # DOCX / XLSX 等 Office 样本
+│   ├── pdf_chart_heavy/             # 图表密集 PDF
+│   ├── pdf_image/                   # 图片多的 PDF
+│   ├── pdf_long/                    # 长 PDF
+│   ├── pdf_plain/                   # 普通文本型 PDF
+│   ├── pdf_two_column/              # 双栏 research paper
+│   └── PPTX/                        # PPTX 样本
+│
+├── outputs/                         # 输出目录
+│   ├── markdown/                    # 转换后的 Markdown
+│   ├── images/                      # 抽取出的图片资源
+│   ├── reports/                     # CSV / JSON / summary 报告
+│   └── logs/                        # 每个任务的日志
+│
+└── tests/                           # 单元测试 / 集成测试
+    ├── test_analyzers.py            # 测试文件分析逻辑
+    ├── test_strategy_selector.py    # 测试策略选择逻辑
+    ├── test_structure_repair.py     # 测试结构修复逻辑
+    └── test_pipeline.py             # 测试整条转换流程
+    
+    
+    
+    
+1. 长 PDF / 图片型 PDF / 图表多 PDF 容易 timeout
+问题：
+    遇到复杂 PDF 时耗时很高，甚至无法稳定完成转换
+    用户一键处理整个目录时，容易被少数重型文件拖慢
+解决方法：
+    - 在 file_analyzer.py 中预分析 PDF：页数、文件大小、图片比例、是否扫描件、是否双栏、是否图表密集
+    - 在 strategy_selector.py 中按类型分流：
+        短 PDF → 正常转换
+        长 PDF → 分页 / 分块转换
+        图片型 PDF → 开 OCR 或切换备用 converter
+        图表多 PDF → 降低处理精度，跳过图片深度解析
+
+
+2. 资源占用很高，一个文件失败影响整个批量任务
+问题：
+    某个文件超时或崩溃，可能拖住整个批处理流程
+    大文件容易占满 CPU / 内存
+解决方法：
+    - 一个文件一个 subprocess
+    - 为每个任务单独设置 timeout、内存限制、失败重试次数
+    - 文件失败后只记录日志和报告，不中断其他文件
+
+3. 图片处理不完整
+问题：
+    图片常常只被占位，不能真正成为可用内容
+    图表也常被当作普通图片处理
+解决方法：
+    - 做一个 image_handler.py，将图片处理单独模块化
+    - 默认模式：只抽取图片并插入 Markdown 链接
+    - 增强模式：补充占位说明
+    - 可选模式：调用视觉模型生成 image caption，提升 LLM/RAG 可用性
+
+4. 部分结构保留不理想
+问题：
+    有些 DOCX / HTML / PPTX 的标题没有被转成 Markdown heading
+    列表、表格、引用块虽然保留了内容，但结构不够清晰
+解决方法：
+    - 做一个 structure_repair.py，在转换后修复结构
+    - 识别短标题、大写标题、编号标题、HTML h1/h2/h3、DOCX paragraph style、PPTX slide title
+    - 自动补成 # / ## / ###
+    - 对列表、表格、引用块做格式标准化，提高 preview 和 chunking 效果
+
+5. 复杂公式 / 双栏论文 / 图表语义保留不足
+问题：
+    简单公式还能转，复杂公式和数学符号容易丢失或排版错乱
+    双栏论文可能存在顺序问题
+    图表只保留为图片，语义信息不足
+解决方法：  
+    - 做一个 special_block_handler.py 或 semantic_enhancer.py
+    - 先识别是否为双栏论文、公式密集文档、图表密集文档
+    - 复杂公式优先保留原块截图，尝试提取 LaTeX / MathML，失败时回退为图片区块
+    - 双栏文档增加 post-check，必要时重排 block 顺序
+    - 图表至少保留图编号、标题、页码、图片路径，必要时调用视觉模型生成简要说明
+
+
+
+
+
+
+这些是我手动对比所得到的“部分结构保留不理想”和“复杂公式 / 双栏论文 / 图表语义保留不足”的结果，改进它们：
+1. docx_002内的tables仍然没有很好地转化为md，转化出的md文件看起来与原先的表格类似，不过一旦preview，它的排版就会混乱。
+2. docx_003的title没有被大写，pdf_chart_heavy_001也没有被大写
+3. pptx_001内部的数学公式虽然基本被转化了，但是它没有像docx_003的类似“\left(x+a\right)^{n}”的格式，而是类似于这样“cj=∑a: h(a)=j xa * inc(a)”
+4. pptx文件在转化中，似乎没有把bullet分级
+5. 在pdf_two_column测试中，转换器未能识别出该研究论文的双栏布局。因此，左栏和右栏的文本被合并到了同一行 Markdown 代码中，这破坏了原始的阅读顺序
+6. pdf_image_001中的目录的排版没有被继承，转化出的md文件内目录中的每一行都混杂在一起

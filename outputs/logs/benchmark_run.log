@@ -1,0 +1,22 @@
+Run log: /data/output/logs/benchmark_run_028.log
+[1/8] Converting: /data/input/PPTX/pptx1.pptx (family=not_pdf, content=pptx, chunking=False)
+  -> status=success, strategy=not_pdf/pptx, adapter=docling, elapsed=4.0073s, peak_rss_mb=443.2891, avg_cpu=69.4429
+[2/8] Converting: /data/input/html/html_02.html (family=not_pdf, content=html, chunking=False)
+  -> status=success, strategy=not_pdf/html, adapter=docling, elapsed=2.3532s, peak_rss_mb=402.918, avg_cpu=98.725
+[3/8] Converting: /data/input/office/office_02.docx (family=not_pdf, content=office, chunking=False)
+  -> status=success, strategy=not_pdf/office, adapter=docling, elapsed=2.1511s, peak_rss_mb=406.5586, avg_cpu=98.525
+[4/8] Converting: /data/input/pdf_long/long_01.pdf (family=pdf, content=pdf_plain, chunking=True)
+  -> status=success, strategy=pdf_long/pdf_plain, adapter=docling, elapsed=218.597s, peak_rss_mb=2893.9219, avg_cpu=118.1183
+[5/8] Converting: /data/input/pdf_long/long_02.pdf (family=pdf, content=pdf_two_column, chunking=False)
+  -> status=success, strategy=pdf_long/pdf_two_column, adapter=docling, elapsed=422.5966s, peak_rss_mb=2963.2695, avg_cpu=143.8957
+[6/8] Converting: /data/input/pdf_long/long_03.pdf (family=pdf, content=pdf_scan, chunking=True)
+  -> status=success, strategy=pdf_long/pdf_scan, adapter=docling, elapsed=223.9766s, peak_rss_mb=2499.2266, avg_cpu=130.4903
+[7/8] Converting: /data/input/pdf_plain/plain_02.pdf (family=pdf, content=pdf_image, chunking=True)
+  -> status=success, strategy=pdf_long/pdf_image, adapter=docling, elapsed=220.3435s, peak_rss_mb=2835.8516, avg_cpu=119.0631
+[8/8] Converting: /data/input/pdf_scan/scan_2.pdf (family=pdf, content=pdf_scan, chunking=True)
+  -> status=success, strategy=pdf_long/pdf_scan, adapter=docling, elapsed=133.3067s, peak_rss_mb=2742.6602, avg_cpu=125.7042
+
+Done. Success: 8/8 (100.00%)
+CSV report: /data/output/reports/benchmark_results_028.csv
+Summary report: /data/output/reports/benchmark_summary_028.json
+Log report: /data/output/logs/benchmark_run_028.log

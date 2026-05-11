@@ -1,0 +1,223 @@
+Run log: /data/output/logs/benchmark_run_007.log
+[1/25] Converting: /data/input/PPTX/pptx1.pptx (family=not_pdf, content=pptx, chunking=False)
+  -> status=success, strategy=not_pdf/pptx, adapter=docling, elapsed=7.3597s, peak_rss_mb=443.3633, avg_cpu=79.1857
+[2/25] Converting: /data/input/PPTX/pptx2.pptx (family=not_pdf, content=pptx, chunking=False)
+  -> status=success, strategy=not_pdf/pptx, adapter=docling, elapsed=4.8951s, peak_rss_mb=440.5703, avg_cpu=99.2333
+[3/25] Converting: /data/input/PPTX/pptx3.pptx (family=not_pdf, content=pptx, chunking=False)
+  -> status=success, strategy=not_pdf/pptx, adapter=docling, elapsed=4.2634s, peak_rss_mb=408.5078, avg_cpu=99.05
+[4/25] Converting: /data/input/html/html_01.html (family=not_pdf, content=html, chunking=False)
+  -> status=success, strategy=not_pdf/html, adapter=docling, elapsed=4.2531s, peak_rss_mb=407.2227, avg_cpu=99.2375
+[5/25] Converting: /data/input/html/html_02.html (family=not_pdf, content=html, chunking=False)
+  -> status=success, strategy=not_pdf/html, adapter=docling, elapsed=4.1739s, peak_rss_mb=403.0156, avg_cpu=99.5375
+[6/25] Converting: /data/input/html/html_03.html (family=not_pdf, content=html, chunking=False)
+  -> status=success, strategy=not_pdf/html, adapter=docling, elapsed=4.1523s, peak_rss_mb=402.9648, avg_cpu=98.6875
+[7/25] Converting: /data/input/offic_long.docx (family=not_pdf, content=office, chunking=False)
+  -> status=success, strategy=not_pdf/office, adapter=docling, elapsed=21.0085s, peak_rss_mb=632.2148, avg_cpu=93.6317
+[8/25] Converting: /data/input/office/office_01.docx (family=not_pdf, content=office, chunking=False)
+  -> status=success, strategy=not_pdf/office, adapter=docling, elapsed=5.5077s, peak_rss_mb=434.0391, avg_cpu=95.27
+[9/25] Converting: /data/input/office/office_02.docx (family=not_pdf, content=office, chunking=False)
+  -> status=success, strategy=not_pdf/office, adapter=docling, elapsed=4.3237s, peak_rss_mb=406.3984, avg_cpu=99.35
+[10/25] Converting: /data/input/office/office_03.docx (family=not_pdf, content=office, chunking=False)
+  -> status=success, strategy=not_pdf/office, adapter=docling, elapsed=4.9412s, peak_rss_mb=439.0195, avg_cpu=96.6
+[11/25] Converting: /data/input/pdf_image/pdf_image1.pdf (family=pdf, content=pdf_scan, chunking=True)
+r_success doc=html_01.html adapter=docling cpu_time_sec=3.3182 peak_rss_mb=406.7773 sample_text_coverage=None
+[2026-05-09 23:06:35] task_end doc=html_01.html success=True timed_out=False suspected_hang=False elapsed_sec=4.2531 avg_cpu_percent=99.2375 peak_cpu_percent=100.0 peak_rss_mb=407.2227 error_type=
+[2026-05-09 23:06:35] task_start doc=html_02.html strategy=not_pdf tags=not_pdf,html chunk_count=0 timeout_sec=900.0 memory_limit_mb=12288 retries=1
+[2026-05-09 23:06:36] worker_start doc=/data/input/html/html_02.html strategy=not_pdf tags=not_pdf,html
+[2026-05-09 23:06:39] worker_success doc=html_02.html adapter=docling cpu_time_sec=3.2563 peak_rss_mb=402.5078 sample_text_coverage=None
+[2026-05-09 23:06:40] task_end doc=html_02.html success=True timed_out=False suspected_hang=False elapsed_sec=4.1739 avg_cpu_percent=99.5375 peak_cpu_percent=100.0 peak_rss_mb=403.0156 error_type=
+[2026-05-09 23:06:40] task_start doc=html_03.html strategy=not_pdf tags=not_pdf,html chunk_count=0 timeout_sec=900.0 memory_limit_mb=12288 retries=1
+[2026-05-09 23:06:40] worker_start doc=/data/input/html/html_03.html strategy=not_pdf tags=not_pdf,html
+[2026-05-09 23:06:43] worker_success doc=html_03.html adapter=docling cpu_time_sec=3.2262 peak_rss_mb=402.3789 sample_text_coverage=None
+[2026-05-09 23:06:44] task_end doc=html_03.html success=True timed_out=False suspected_hang=False elapsed_sec=4.1523 avg_cpu_percent=98.6875 peak_cpu_percent=99.5 peak_rss_mb=402.9648 error_type=
+[2026-05-09 23:06:44] task_start doc=offic_long.docx strategy=not_pdf tags=not_pdf,office chunk_count=0 timeout_sec=900.0 memory_limit_mb=12288 retries=1
+[2026-05-09 23:06:44] worker_start doc=/data/input/offic_long.docx strategy=not_pdf tags=not_pdf,office
+[2026-05-09 23:06:49] monitor doc=offic_long.docx pid=93 elapsed_sec=5.03 cpu_percent=99.2 rss_kb=495120 cpu_active=True rss_active=True
+[2026-05-09 23:06:54] monitor doc=offic_long.docx pid=93 elapsed_sec=10.08 cpu_percent=89.2 rss_kb=596032 cpu_active=True rss_active=False
+[2026-05-09 23:06:59] monitor doc=offic_long.docx pid=93 elapsed_sec=15.18 cpu_percent=90.5 rss_kb=606460 cpu_active=True rss_active=True
+[2026-05-09 23:07:04] worker_success doc=offic_long.docx adapter=docling cpu_time_sec=17.7858 peak_rss_mb=632.2148 sample_text_coverage=None
+[2026-05-09 23:07:04] monitor doc=offic_long.docx pid=93 elapsed_sec=20.23 cpu_percent=89.8 rss_kb=574904 cpu_active=True rss_active=True
+[2026-05-09 23:07:05] task_end doc=offic_long.docx success=True timed_out=False suspected_hang=False elapsed_sec=21.0085 avg_cpu_percent=93.6317 peak_cpu_percent=99.6 peak_rss_mb=632.2148 error_type=
+[2026-05-09 23:07:05] task_start doc=office_01.docx strategy=not_pdf tags=not_pdf,office chunk_count=0 timeout_sec=900.0 memory_limit_mb=12288 retries=1
+[2026-05-09 23:07:05] worker_start doc=/data/input/office/office_01.docx strategy=not_pdf tags=not_pdf,office
+[2026-05-09 23:07:10] worker_success doc=office_01.docx adapter=docling cpu_time_sec=3.5083 peak_rss_mb=434.0391 sample_text_coverage=None
+[2026-05-09 23:07:10] monitor doc=office_01.docx pid=246 elapsed_sec=5.04 cpu_percent=79.5 rss_kb=417180 cpu_active=True rss_active=False
+[2026-05-09 23:07:10] task_end doc=office_01.docx success=True timed_out=False suspected_hang=False elapsed_sec=5.5077 avg_cpu_percent=95.27 peak_cpu_percent=99.7 peak_rss_mb=434.0391 error_type=
+[2026-05-09 23:07:10] task_start doc=office_02.docx strategy=not_pdf tags=not_pdf,office chunk_count=0 timeout_sec=900.0 memory_limit_mb=12288 retries=1
+[2026-05-09 23:07:11] worker_start doc=/data/input/office/office_02.docx strategy=not_pdf tags=not_pdf,office
+[2026-05-09 23:07:14] worker_success doc=office_02.docx adapter=docling cpu_time_sec=3.3623 peak_rss_mb=406.0625 sample_text_coverage=None
+[2026-05-09 23:07:15] task_end doc=office_02.docx success=True timed_out=False suspected_hang=False elapsed_sec=4.3237 avg_cpu_percent=99.35 peak_cpu_percent=100.0 peak_rss_mb=406.3984 error_type=
+[2026-05-09 23:07:15] task_start doc=office_03.docx strategy=not_pdf tags=not_pdf,office chunk_count=0 timeout_sec=900.0 memory_limit_mb=12288 retries=1
+[2026-05-09 23:07:15] worker_start doc=/data/input/office/office_03.docx strategy=not_pdf tags=not_pdf,office
+[2026-05-09 23:07:19] worker_success doc=office_03.docx adapter=docling cpu_time_sec=3.3159 peak_rss_mb=439.0195 sample_text_coverage=None
+[2026-05-09 23:07:20] task_end doc=office_03.docx success=True timed_out=False suspected_hang=False elapsed_sec=4.9412 avg_cpu_percent=96.6 peak_cpu_percent=100.0 peak_rss_mb=439.0195 error_type=
+[2026-05-09 23:07:21] task_start doc=pdf_image1.pdf strategy=pdf_long tags=pdf,pdf_scan,long,chunked chunk_count=10 timeout_sec=2400.0 memory_limit_mb=12288 retries=2
+[2026-05-09 23:07:21] worker_start doc=/data/input/pdf_image/pdf_image1.pdf strategy=pdf_long tags=pdf,pdf_scan,long,chunked
+[2026-05-09 23:07:26] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=5.04 cpu_percent=96.0 rss_kb=801460 cpu_active=True rss_active=True
+[2026-05-09 23:07:31] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=10.08 cpu_percent=120.0 rss_kb=1208328 cpu_active=True rss_active=True
+[2026-05-09 23:07:36] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=15.14 cpu_percent=130.0 rss_kb=1574260 cpu_active=True rss_active=False
+[2026-05-09 23:07:41] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=20.22 cpu_percent=128.0 rss_kb=1805024 cpu_active=True rss_active=True
+[2026-05-09 23:07:46] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=25.27 cpu_percent=130.0 rss_kb=1703032 cpu_active=True rss_active=True
+[2026-05-09 23:07:51] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=30.31 cpu_percent=145.0 rss_kb=1993672 cpu_active=True rss_active=True
+[2026-05-09 23:07:56] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=35.35 cpu_percent=158.0 rss_kb=2136332 cpu_active=True rss_active=True
+[2026-05-09 23:08:01] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=40.43 cpu_percent=166.0 rss_kb=2134272 cpu_active=True rss_active=True
+[2026-05-09 23:08:06] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=45.48 cpu_percent=174.0 rss_kb=2012472 cpu_active=True rss_active=True
+[2026-05-09 23:08:11] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=50.55 cpu_percent=185.0 rss_kb=2076172 cpu_active=True rss_active=True
+[2026-05-09 23:08:16] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=55.60 cpu_percent=191.0 rss_kb=1945144 cpu_active=True rss_active=True
+[2026-05-09 23:08:21] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=60.69 cpu_percent=193.0 rss_kb=2124344 cpu_active=True rss_active=True
+[2026-05-09 23:08:26] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=65.74 cpu_percent=193.0 rss_kb=2004896 cpu_active=True rss_active=True
+[2026-05-09 23:08:31] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=70.80 cpu_percent=194.0 rss_kb=2004896 cpu_active=True rss_active=True
+[2026-05-09 23:08:37] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=75.88 cpu_percent=193.0 rss_kb=1934040 cpu_active=True rss_active=True
+[2026-05-09 23:08:42] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=80.93 cpu_percent=187.0 rss_kb=1875832 cpu_active=True rss_active=False
+[2026-05-09 23:08:47] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=85.98 cpu_percent=182.0 rss_kb=1802928 cpu_active=True rss_active=True
+[2026-05-09 23:08:52] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=91.02 cpu_percent=180.0 rss_kb=2150056 cpu_active=True rss_active=True
+[2026-05-09 23:08:57] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=96.07 cpu_percent=177.0 rss_kb=2238016 cpu_active=True rss_active=True
+[2026-05-09 23:09:02] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=101.12 cpu_percent=177.0 rss_kb=2281320 cpu_active=True rss_active=True
+[2026-05-09 23:09:07] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=106.16 cpu_percent=177.0 rss_kb=2360844 cpu_active=True rss_active=True
+[2026-05-09 23:09:12] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=111.20 cpu_percent=175.0 rss_kb=2296712 cpu_active=True rss_active=True
+[2026-05-09 23:09:17] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=116.26 cpu_percent=175.0 rss_kb=2369684 cpu_active=True rss_active=True
+[2026-05-09 23:09:22] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=121.30 cpu_percent=173.0 rss_kb=2455344 cpu_active=True rss_active=True
+[2026-05-09 23:09:27] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=126.42 cpu_percent=172.0 rss_kb=2323648 cpu_active=True rss_active=True
+[2026-05-09 23:09:32] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=131.46 cpu_percent=171.0 rss_kb=2228592 cpu_active=True rss_active=True
+[2026-05-09 23:09:37] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=136.50 cpu_percent=170.0 rss_kb=2324512 cpu_active=True rss_active=True
+[2026-05-09 23:09:42] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=141.57 cpu_percent=169.0 rss_kb=2565660 cpu_active=True rss_active=True
+[2026-05-09 23:09:47] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=146.64 cpu_percent=167.0 rss_kb=2242824 cpu_active=True rss_active=False
+[2026-05-09 23:09:52] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=151.70 cpu_percent=165.0 rss_kb=2316652 cpu_active=True rss_active=True
+[2026-05-09 23:09:57] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=156.78 cpu_percent=162.0 rss_kb=2177748 cpu_active=True rss_active=True
+[2026-05-09 23:10:03] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=161.88 cpu_percent=160.0 rss_kb=2119692 cpu_active=True rss_active=False
+[2026-05-09 23:10:08] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=166.94 cpu_percent=159.0 rss_kb=2093324 cpu_active=True rss_active=True
+[2026-05-09 23:10:13] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=171.98 cpu_percent=157.0 rss_kb=2115368 cpu_active=True rss_active=False
+[2026-05-09 23:10:18] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=177.02 cpu_percent=158.0 rss_kb=2197412 cpu_active=True rss_active=True
+[2026-05-09 23:10:23] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=182.06 cpu_percent=158.0 rss_kb=2449712 cpu_active=True rss_active=True
+[2026-05-09 23:10:28] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=187.11 cpu_percent=158.0 rss_kb=2404516 cpu_active=True rss_active=True
+[2026-05-09 23:10:33] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=192.15 cpu_percent=158.0 rss_kb=2418084 cpu_active=True rss_active=True
+[2026-05-09 23:10:38] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=197.18 cpu_percent=158.0 rss_kb=2589572 cpu_active=True rss_active=True
+[2026-05-09 23:10:43] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=202.23 cpu_percent=157.0 rss_kb=2448260 cpu_active=True rss_active=True
+[2026-05-09 23:10:48] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=207.26 cpu_percent=157.0 rss_kb=2549200 cpu_active=True rss_active=True
+[2026-05-09 23:10:53] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=212.30 cpu_percent=156.0 rss_kb=2445432 cpu_active=True rss_active=True
+[2026-05-09 23:10:58] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=217.37 cpu_percent=156.0 rss_kb=2554596 cpu_active=True rss_active=True
+[2026-05-09 23:11:03] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=222.42 cpu_percent=155.0 rss_kb=2697604 cpu_active=True rss_active=True
+[2026-05-09 23:11:08] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=227.47 cpu_percent=154.0 rss_kb=2595204 cpu_active=True rss_active=True
+[2026-05-09 23:11:13] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=232.54 cpu_percent=153.0 rss_kb=2469676 cpu_active=True rss_active=False
+[2026-05-09 23:11:18] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=237.59 cpu_percent=152.0 rss_kb=2414364 cpu_active=True rss_active=False
+[2026-05-09 23:11:23] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=242.63 cpu_percent=151.0 rss_kb=2270092 cpu_active=True rss_active=False
+[2026-05-09 23:11:28] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=247.67 cpu_percent=149.0 rss_kb=2340128 cpu_active=True rss_active=True
+[2026-05-09 23:11:33] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=252.72 cpu_percent=149.0 rss_kb=2226028 cpu_active=True rss_active=False
+[2026-05-09 23:11:38] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=257.76 cpu_percent=150.0 rss_kb=2304736 cpu_active=True rss_active=False
+[2026-05-09 23:11:43] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=262.81 cpu_percent=149.0 rss_kb=2314036 cpu_active=True rss_active=False
+[2026-05-09 23:11:48] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=267.86 cpu_percent=150.0 rss_kb=2379540 cpu_active=True rss_active=True
+[2026-05-09 23:11:54] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=272.90 cpu_percent=150.0 rss_kb=2607744 cpu_active=True rss_active=True
+[2026-05-09 23:11:59] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=277.97 cpu_percent=150.0 rss_kb=2438996 cpu_active=True rss_active=True
+[2026-05-09 23:12:04] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=283.02 cpu_percent=150.0 rss_kb=2513372 cpu_active=True rss_active=True
+[2026-05-09 23:12:09] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=288.08 cpu_percent=150.0 rss_kb=2417860 cpu_active=True rss_active=True
+[2026-05-09 23:12:14] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=293.12 cpu_percent=150.0 rss_kb=2504692 cpu_active=True rss_active=True
+[2026-05-09 23:12:19] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=298.16 cpu_percent=150.0 rss_kb=2442956 cpu_active=True rss_active=True
+[2026-05-09 23:12:24] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=303.21 cpu_percent=150.0 rss_kb=2526892 cpu_active=True rss_active=True
+[2026-05-09 23:12:29] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=308.28 cpu_percent=149.0 rss_kb=2411444 cpu_active=True rss_active=True
+[2026-05-09 23:12:34] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=313.33 cpu_percent=149.0 rss_kb=2642432 cpu_active=True rss_active=True
+[2026-05-09 23:12:39] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=318.40 cpu_percent=148.0 rss_kb=2426868 cpu_active=True rss_active=True
+[2026-05-09 23:12:44] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=323.46 cpu_percent=147.0 rss_kb=2323312 cpu_active=True rss_active=False
+[2026-05-09 23:12:49] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=328.53 cpu_percent=146.0 rss_kb=2243704 cpu_active=True rss_active=False
+[2026-05-09 23:12:54] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=333.58 cpu_percent=146.0 rss_kb=2319076 cpu_active=True rss_active=True
+[2026-05-09 23:12:59] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=338.63 cpu_percent=145.0 rss_kb=2229920 cpu_active=True rss_active=True
+[2026-05-09 23:13:04] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=343.68 cpu_percent=146.0 rss_kb=2284632 cpu_active=True rss_active=False
+[2026-05-09 23:13:09] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=348.73 cpu_percent=146.0 rss_kb=2349372 cpu_active=True rss_active=True
+[2026-05-09 23:13:14] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=353.78 cpu_percent=147.0 rss_kb=2505088 cpu_active=True rss_active=True
+[2026-05-09 23:13:19] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=358.82 cpu_percent=147.0 rss_kb=2620124 cpu_active=True rss_active=True
+[2026-05-09 23:13:25] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=363.86 cpu_percent=147.0 rss_kb=2549936 cpu_active=True rss_active=True
+[2026-05-09 23:13:30] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=368.90 cpu_percent=147.0 rss_kb=2379812 cpu_active=True rss_active=True
+[2026-05-09 23:13:35] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=373.95 cpu_percent=147.0 rss_kb=2529852 cpu_active=True rss_active=False
+[2026-05-09 23:13:40] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=379.00 cpu_percent=147.0 rss_kb=2665296 cpu_active=True rss_active=True
+[2026-05-09 23:13:45] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=384.13 cpu_percent=147.0 rss_kb=2525588 cpu_active=True rss_active=True
+[2026-05-09 23:13:50] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=389.17 cpu_percent=147.0 rss_kb=2401316 cpu_active=True rss_active=True
+[2026-05-09 23:13:55] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=394.24 cpu_percent=146.0 rss_kb=2534936 cpu_active=True rss_active=False
+[2026-05-09 23:14:00] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=399.31 cpu_percent=146.0 rss_kb=2349456 cpu_active=True rss_active=True
+[2026-05-09 23:14:05] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=404.35 cpu_percent=145.0 rss_kb=2593208 cpu_active=True rss_active=True
+[2026-05-09 23:14:10] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=409.41 cpu_percent=145.0 rss_kb=2389712 cpu_active=True rss_active=False
+[2026-05-09 23:14:15] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=414.45 cpu_percent=144.0 rss_kb=2305764 cpu_active=True rss_active=True
+[2026-05-09 23:14:20] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=419.49 cpu_percent=144.0 rss_kb=2351992 cpu_active=True rss_active=True
+[2026-05-09 23:14:25] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=424.53 cpu_percent=143.0 rss_kb=2284544 cpu_active=True rss_active=True
+[2026-05-09 23:14:30] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=429.57 cpu_percent=143.0 rss_kb=2347296 cpu_active=True rss_active=True
+[2026-05-09 23:14:35] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=434.61 cpu_percent=144.0 rss_kb=2490468 cpu_active=True rss_active=True
+[2026-05-09 23:14:40] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=439.66 cpu_percent=144.0 rss_kb=2589060 cpu_active=True rss_active=True
+[2026-05-09 23:14:45] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=444.70 cpu_percent=144.0 rss_kb=2462284 cpu_active=True rss_active=True
+[2026-05-09 23:14:50] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=449.75 cpu_percent=144.0 rss_kb=2506216 cpu_active=True rss_active=True
+[2026-05-09 23:14:55] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=454.79 cpu_percent=144.0 rss_kb=2586540 cpu_active=True rss_active=True
+[2026-05-09 23:15:01] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=459.91 cpu_percent=144.0 rss_kb=2850652 cpu_active=True rss_active=True
+[2026-05-09 23:15:06] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=464.96 cpu_percent=144.0 rss_kb=2443212 cpu_active=True rss_active=True
+[2026-05-09 23:15:11] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=470.02 cpu_percent=144.0 rss_kb=2619280 cpu_active=True rss_active=True
+[2026-05-09 23:15:16] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=475.07 cpu_percent=144.0 rss_kb=2513924 cpu_active=True rss_active=True
+[2026-05-09 23:15:21] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=480.11 cpu_percent=144.0 rss_kb=2577304 cpu_active=True rss_active=True
+[2026-05-09 23:15:26] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=485.16 cpu_percent=143.0 rss_kb=2518092 cpu_active=True rss_active=False
+[2026-05-09 23:15:31] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=490.22 cpu_percent=143.0 rss_kb=2555124 cpu_active=True rss_active=False
+[2026-05-09 23:15:36] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=495.28 cpu_percent=142.0 rss_kb=2438868 cpu_active=True rss_active=False
+[2026-05-09 23:15:41] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=500.32 cpu_percent=142.0 rss_kb=2358500 cpu_active=True rss_active=False
+[2026-05-09 23:15:46] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=505.37 cpu_percent=142.0 rss_kb=2371684 cpu_active=True rss_active=True
+[2026-05-09 23:15:51] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=510.41 cpu_percent=141.0 rss_kb=2298008 cpu_active=True rss_active=False
+[2026-05-09 23:15:56] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=515.46 cpu_percent=142.0 rss_kb=2357460 cpu_active=True rss_active=False
+[2026-05-09 23:16:01] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=520.62 cpu_percent=142.0 rss_kb=2477164 cpu_active=True rss_active=True
+[2026-05-09 23:16:06] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=525.71 cpu_percent=142.0 rss_kb=2493780 cpu_active=True rss_active=True
+[2026-05-09 23:16:11] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=530.74 cpu_percent=142.0 rss_kb=2641908 cpu_active=True rss_active=True
+[2026-05-09 23:16:16] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=535.77 cpu_percent=142.0 rss_kb=2645076 cpu_active=True rss_active=True
+[2026-05-09 23:16:21] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=540.80 cpu_percent=142.0 rss_kb=2710436 cpu_active=True rss_active=True
+[2026-05-09 23:16:26] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=545.84 cpu_percent=142.0 rss_kb=2581452 cpu_active=True rss_active=True
+[2026-05-09 23:16:32] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=550.88 cpu_percent=142.0 rss_kb=2385116 cpu_active=True rss_active=False
+[2026-05-09 23:16:37] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=555.91 cpu_percent=141.0 rss_kb=2350304 cpu_active=True rss_active=True
+[2026-05-09 23:16:42] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=560.94 cpu_percent=141.0 rss_kb=2366452 cpu_active=True rss_active=True
+[2026-05-09 23:16:47] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=565.97 cpu_percent=141.0 rss_kb=2528320 cpu_active=True rss_active=True
+[2026-05-09 23:16:52] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=571.02 cpu_percent=141.0 rss_kb=2414584 cpu_active=True rss_active=True
+[2026-05-09 23:16:57] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=576.05 cpu_percent=141.0 rss_kb=2821800 cpu_active=True rss_active=True
+[2026-05-09 23:17:02] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=581.08 cpu_percent=141.0 rss_kb=2446480 cpu_active=True rss_active=True
+[2026-05-09 23:17:07] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=586.13 cpu_percent=141.0 rss_kb=2468440 cpu_active=True rss_active=True
+[2026-05-09 23:17:12] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=591.17 cpu_percent=141.0 rss_kb=2437688 cpu_active=True rss_active=True
+[2026-05-09 23:17:17] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=596.22 cpu_percent=140.0 rss_kb=2339420 cpu_active=True rss_active=True
+[2026-05-09 23:17:22] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=601.25 cpu_percent=140.0 rss_kb=2298720 cpu_active=True rss_active=True
+[2026-05-09 23:17:27] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=606.28 cpu_percent=140.0 rss_kb=2553692 cpu_active=True rss_active=True
+[2026-05-09 23:17:32] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=611.35 cpu_percent=140.0 rss_kb=2463732 cpu_active=True rss_active=True
+[2026-05-09 23:17:37] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=616.38 cpu_percent=140.0 rss_kb=2417032 cpu_active=True rss_active=True
+[2026-05-09 23:17:42] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=621.41 cpu_percent=140.0 rss_kb=2632040 cpu_active=True rss_active=True
+[2026-05-09 23:17:47] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=626.45 cpu_percent=140.0 rss_kb=2376536 cpu_active=True rss_active=True
+[2026-05-09 23:17:52] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=631.49 cpu_percent=140.0 rss_kb=2510172 cpu_active=True rss_active=True
+[2026-05-09 23:17:57] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=636.53 cpu_percent=140.0 rss_kb=2348852 cpu_active=True rss_active=False
+[2026-05-09 23:18:02] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=641.56 cpu_percent=139.0 rss_kb=2291588 cpu_active=True rss_active=True
+[2026-05-09 23:18:07] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=646.60 cpu_percent=139.0 rss_kb=2460924 cpu_active=True rss_active=True
+[2026-05-09 23:18:12] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=651.63 cpu_percent=139.0 rss_kb=2473704 cpu_active=True rss_active=True
+[2026-05-09 23:18:17] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=656.66 cpu_percent=140.0 rss_kb=2505224 cpu_active=True rss_active=True
+[2026-05-09 23:18:22] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=661.73 cpu_percent=140.0 rss_kb=2585992 cpu_active=True rss_active=True
+[2026-05-09 23:18:27] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=666.76 cpu_percent=140.0 rss_kb=2435060 cpu_active=True rss_active=True
+[2026-05-09 23:18:32] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=671.79 cpu_percent=140.0 rss_kb=2459900 cpu_active=True rss_active=True
+[2026-05-09 23:18:37] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=676.84 cpu_percent=140.0 rss_kb=2352636 cpu_active=True rss_active=False
+[2026-05-09 23:18:41] worker_success doc=pdf_image1.pdf adapter=docling cpu_time_sec=950.9584 peak_rss_mb=2983.6211 sample_text_coverage=0.9919
+[2026-05-09 23:18:43] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=681.89 cpu_percent=139.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:18:48] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=686.98 cpu_percent=138.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:18:53] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=692.06 cpu_percent=137.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:18:58] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=697.16 cpu_percent=136.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:03] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=702.26 cpu_percent=135.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:08] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=707.35 cpu_percent=134.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:13] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=712.45 cpu_percent=133.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:18] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=717.51 cpu_percent=132.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:23] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=722.60 cpu_percent=131.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:28] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=727.70 cpu_percent=130.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:33] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=732.80 cpu_percent=129.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:39] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=737.89 cpu_percent=128.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:44] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=742.98 cpu_percent=128.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:49] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=748.06 cpu_percent=127.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:54] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=753.15 cpu_percent=126.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:19:59] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=758.23 cpu_percent=125.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:04] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=763.32 cpu_percent=124.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:09] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=768.41 cpu_percent=123.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:14] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=773.50 cpu_percent=122.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:19] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=778.58 cpu_percent=122.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:24] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=783.68 cpu_percent=121.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:29] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=788.78 cpu_percent=120.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:35] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=793.88 cpu_percent=119.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:40] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=798.99 cpu_percent=119.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:45] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=804.10 cpu_percent=118.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:50] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=809.22 cpu_percent=117.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:20:55] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=814.31 cpu_percent=116.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:21:00] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=819.41 cpu_percent=116.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:21:05] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=824.50 cpu_percent=115.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:21:10] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=829.57 cpu_percent=114.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:21:15] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=834.66 cpu_percent=113.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:21:20] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=839.74 cpu_percent=113.0 rss_kb=2280884 cpu_active=True rss_active=False
+[2026-05-09 23:21:26] monitor doc=pdf_image1.pdf pid=467 elapsed_sec=844.83 cpu_percent=112.0 rss_kb=2280884 cpu_active=True rss_active=False

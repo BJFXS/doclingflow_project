@@ -1,0 +1,10 @@
+{
+  "total_files": 24,
+  "success_files": 23,
+  "failed_files": 1,
+  "timed_out_files": 1,
+  "suspected_hang_files": 0,
+  "success_rate": 0.9583,
+  "avg_elapsed_sec": 166.8159,
+  "total_elapsed_sec": 4003.5819
+}

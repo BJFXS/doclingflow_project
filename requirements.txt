@@ -1,0 +1,6 @@
+numpy==1.26.4
+torch==2.2.2
+torchvision==0.17.2
+transformers>=4.57,<5
+docling==2.91.0
+pypdf==5.5.0

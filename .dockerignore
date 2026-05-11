@@ -1,0 +1,13 @@
+.git
+.pytest_cache
+.vscode
+__pycache__/
+*/__pycache__/
+tmp/
+output/
+outputs/
+test_docs/
+*.pyc
+*.pyo
+*.pyd
+.DS_Store

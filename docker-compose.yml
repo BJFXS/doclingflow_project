@@ -1,0 +1,14 @@
+services:
+  doclingflow:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: doclingflow2:latest
+    environment:
+      TEST_DOCS_DIR: /data/input
+      OUTPUTS_DIR: /data/output
+      DEFAULT_MEMORY_LIMIT_MB: 12288
+    volumes:
+      - ./test_docs:/data/input:ro
+      - ./outputs:/data/output
+    command: ["python", "main.py"]
