@@ -122,7 +122,7 @@ Full Docker-only test run:
 
 This script:
 
-- builds a fresh image
+- rebuilds the project image
 - removes the previous Docker test container
 - starts a new Docker test container
 - runs `python -m doclingflow --help`
@@ -187,10 +187,18 @@ By default, Docker runs write results under `outputs/`:
 
 - `outputs/markdown/`
 - `outputs/images/`
+- `outputs/artifacts/`
 - `outputs/reports/`
 - `outputs/logs/`
 
-The published Markdown file is the main user-facing output. Intermediate artifacts are kept to support debugging and quality inspection.
+The published Markdown files under `outputs/markdown/` are the main user-facing outputs.
+
+In the current implementation:
+
+- final Markdown stays under `outputs/markdown/`
+- image files referenced by that final Markdown are usually written under per-document `document_artifacts/` directories inside `outputs/markdown/`
+- intermediate `document.md` files and similar debugging artifacts are moved under `outputs/artifacts/`
+- `outputs/images/` is still part of the configured output layout, but many normal runs will leave it empty
 
 ## Strategy Model
 
