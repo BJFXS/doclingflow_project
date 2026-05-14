@@ -1,6 +1,21 @@
 # doclingflow_project
 
-`doclingflow_project` is a Docker-first document-to-Markdown tool built on top of [Docling](https://github.com/docling-project/docling).
+`doclingflow_project` is a document-to-Markdown tool built on top of [Docling](https://github.com/docling-project/docling).
+
+## Run It In Docker
+
+This project should be run in Docker.
+
+That is the intended user path, the tested path, and the supported path for normal use.
+
+You can try to run parts of it without Docker, but that is not the recommended workflow and it may fail because of local environment issues such as:
+
+- missing system packages
+- OCR/runtime dependency mismatches
+- model/runtime version drift
+- different local Python, Torch, or Docling environments
+
+If you want the most stable behavior and the lowest setup risk, use Docker.
 
 Its goal is not just to convert files quickly. The project is optimized for a stricter target:
 
@@ -38,35 +53,7 @@ The project adds:
 - image reference normalization
 - CSV / JSON batch reports
 
-## Tool Entry Points
-
-The project now exposes a package-style CLI:
-
-```bash
-doclingflow --help
-doclingflow convert input.pdf -o output.md
-doclingflow batch /data/input -o /data/output
-doclingflow inspect input.pdf
-doclingflow doctor
-```
-
-The same functionality is also exposed through the Python package entrypoint:
-
-```bash
-python -m doclingflow --help
-```
-
-## Recommended Runtime
-
-This repository is intended to run in Docker.
-
-The normal end-to-end path is:
-
-1. `run_with_docker.sh`
-2. `Dockerfile`
-3. `python -m doclingflow batch /data/input -o /data/output`
-
-## Standard Docker Run
+## Recommended User Path
 
 Run the bundled input set:
 
@@ -87,6 +74,43 @@ This script:
 - starts a fresh container for the new run
 - mounts the input directory read-only
 - writes Markdown, logs, and reports to the output directory
+
+## CLI Entry Point
+
+The project exposes a package-style CLI, but normal users should think of this as the command that runs inside Docker:
+
+```bash
+doclingflow --help
+doclingflow convert input.pdf -o output.md
+doclingflow batch /data/input -o /data/output
+doclingflow inspect input.pdf
+doclingflow doctor
+```
+
+The same functionality is also exposed through the Python package entrypoint:
+
+```bash
+python -m doclingflow --help
+```
+
+## Docker Runtime
+
+This repository is intended to run in Docker.
+
+The normal end-to-end path is:
+
+1. `run_with_docker.sh`
+2. `Dockerfile`
+3. `python -m doclingflow batch /data/input -o /data/output`
+
+## Non-Docker Note
+
+There is a package/CLI structure in this repository, and commands such as `doclingflow --help` or `python -m doclingflow --help` may work in some environments.
+
+That does not change the recommended usage policy:
+
+- normal users should run the project in Docker
+- non-Docker runs are secondary and may require manual environment repair
 
 ## Docker Validation Scripts
 
