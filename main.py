@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-"""Program entrypoint for Docker-driven batch conversion runs."""
+"""Compatibility entrypoint that preserves the legacy ``python main.py`` path."""
 
-from config import load_settings
-from pipeline.batch_runner import run_batch
+from doclingflow.config import load_settings
+from doclingflow.runtime.batch import run_batch_conversion
 from utils.report_utils import reserve_report_paths, write_summary
 import sys
 
@@ -37,7 +37,7 @@ class _TeeStream:
 
 
 def main() -> None:
-    """Run one full batch conversion and persist the matching reports."""
+    """Run one batch conversion through the package runtime compatibility path."""
 
     settings = load_settings()
     settings.logs_dir.mkdir(parents=True, exist_ok=True)
@@ -49,14 +49,14 @@ def main() -> None:
         sys.stderr = _TeeStream(original_stderr, [log_file, latest_log_file])
         try:
             print(f"Run log: {artifacts.log_path}", flush=True)
-            rows, csv_path, summary_path = run_batch(settings, artifacts)
-            summary = write_summary(rows, summary_path)
-            if not rows:
+            result = run_batch_conversion(settings.test_docs_dir, settings.outputs_dir, settings=settings)
+            summary = write_summary(result.rows, result.summary_path)
+            if not result.rows:
                 print(f"No test documents found under: {settings.test_docs_dir}", flush=True)
                 return
             print(f"\nDone. Success: {summary.success_files}/{summary.total_files} ({summary.success_rate:.2%})", flush=True)
-            print(f"CSV report: {csv_path}", flush=True)
-            print(f"Summary report: {summary_path}", flush=True)
+            print(f"CSV report: {result.csv_path}", flush=True)
+            print(f"Summary report: {result.summary_path}", flush=True)
             print(f"Log report: {artifacts.log_path}", flush=True)
         finally:
             sys.stdout = original_stdout

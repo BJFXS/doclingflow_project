@@ -59,6 +59,12 @@ def run_batch(settings: Settings, artifacts: ReportArtifacts) -> tuple[list[Benc
     return rows, artifacts.csv_path, artifacts.summary_path
 
 
+def build_adapters_from_settings(_: Settings) -> list[BaseAdapter]:
+    """Return the adapter stack used for one batch run."""
+
+    return [DoclingAdapter()]
+
+
 def _write_reports(rows: list[BenchmarkRow], artifacts: ReportArtifacts) -> None:
     """Keep both timestamped and rolling report files in sync."""
 

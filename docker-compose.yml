@@ -11,4 +11,4 @@ services:
     volumes:
       - ./test_docs:/data/input:ro
       - ./outputs:/data/output
-    command: ["python", "main.py"]
+    command: ["python", "-m", "doclingflow", "batch", "/data/input", "-o", "/data/output"]

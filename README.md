@@ -1,28 +1,18 @@
 # doclingflow_project
 
-doclingflow_project is a Docker-first document-to-Markdown pipeline built on top of [Docling](https://github.com/docling-project/docling).
+`doclingflow_project` is a Docker-first document-to-Markdown tool built on top of [Docling](https://github.com/docling-project/docling).
 
-The project is designed for one goal: preserve as much source information as possible while converting common document formats into Markdown that is easier for LLM workflows to consume.
+Its goal is not just to convert files quickly. The project is optimized for a stricter target:
 
-It does not treat all documents the same. Instead, it analyzes each file, routes it through a content-aware strategy, and applies targeted post-processing for structure repair, OCR fallback, image handling, and Markdown cleanup.
+- convert common document formats into Markdown for LLM workflows
+- preserve as much source information as possible
+- apply strategy-aware handling for difficult PDFs instead of treating all files the same
 
-## What This Project Does
+## What It Is
 
-- Converts common document types to Markdown.
-- Uses Docling as the primary conversion backend.
-- Applies different strategies for:
-  - non-PDF documents
-  - short PDFs
-  - long PDFs
-  - scan-heavy PDFs
-  - image-heavy PDFs
-  - two-column PDFs
-- Exports Markdown, extracted image assets, per-file benchmark rows, summary reports, and logs.
-- Runs inside Docker by default so the runtime is reproducible.
+This project is a high-fidelity conversion layer on top of Docling.
 
-## Supported Input Formats
-
-The repository currently scans and converts these file types:
+It currently supports common source types such as:
 
 - `pdf`
 - `docx`
@@ -38,140 +28,180 @@ The repository currently scans and converts these file types:
 - `tiff`
 - `bmp`
 
-The suffix rules are centralized in `document_types.py`.
+The project adds:
 
-## How It Works
+- file-type and PDF layout analysis
+- strategy-aware routing
+- long PDF chunking
+- scan-aware OCR handling
+- Markdown structure repair
+- image reference normalization
+- CSV / JSON batch reports
 
-The default runtime path is:
+## Tool Entry Points
+
+The project now exposes a package-style CLI:
+
+```bash
+doclingflow --help
+doclingflow convert input.pdf -o output.md
+doclingflow batch /data/input -o /data/output
+doclingflow inspect input.pdf
+doclingflow doctor
+```
+
+The same functionality is also exposed through the Python package entrypoint:
+
+```bash
+python -m doclingflow --help
+```
+
+## Recommended Runtime
+
+This repository is intended to run in Docker.
+
+The normal end-to-end path is:
 
 1. `run_with_docker.sh`
 2. `Dockerfile`
-3. `main.py`
-4. `pipeline/batch_runner.py`
-5. `pipeline/task_executor.py`
-6. `pipeline/markdown_pipeline.py`
-7. `adapters/docling_adapter.py`
+3. `python -m doclingflow batch /data/input -o /data/output`
 
-At a high level:
+## Standard Docker Run
 
-1. Collect files recursively from the input directory.
-2. Analyze file type and PDF characteristics.
-3. Select a processing strategy.
-4. Run Docling with strategy-specific runtime options.
-5. Repair and normalize the Markdown output.
-6. Export reports and logs.
-
-## Strategy Overview
-
-Strategy selection is implemented in `pipeline/strategy_selector.py`.
-
-### Non-PDF
-
-Non-PDF files are routed through `not_pdf` mode.
-
-Typical behavior:
-
-- direct Docling conversion
-- lightweight Markdown cleanup
-- format-aware image export for HTML, Office, presentation, and image inputs
-
-### Short PDF
-
-Short PDFs are routed through `pdf_short` mode and then classified into content types such as:
-
-- `pdf_plain`
-- `pdf_scan`
-- `pdf_image`
-- `pdf_two_column`
-
-These types change OCR, batching, image export, and post-processing behavior.
-
-### Long PDF
-
-Long PDFs are routed through `pdf_long` mode.
-
-If the document can be chunked safely, the pipeline uses page-range chunking. Otherwise it keeps the document whole and widens timeouts while using more conservative runtime settings.
-
-### OCR and Quality Recovery
-
-The runtime includes PDF quality guards and OCR-aware recovery steps, including:
-
-- unreadable text-layer detection
-- source-page based recovery when appropriate
-- OCR retry strategies for selected cases
-- conservative handling for scan/OCR-heavy outputs
-
-Relevant modules:
-
-- `pipeline/pdf_quality.py`
-- `pipeline/ocr_quality.py`
-- `pipeline/retry_recovery.py`
-
-## Docker Usage
-
-This project is intended to run in Docker.
-
-### Default Run
-
-Run the bundled test set:
+Run the bundled input set:
 
 ```bash
 ./run_with_docker.sh
 ```
 
-By default this script:
-
-- builds the image `doclingflow2:latest`
-- uses `test_docs/` as input
-- writes results to `outputs/`
-- records the last container name in `outputs/reports/.last_container`
-- removes the previous run container before starting a new one
-
-### Custom Input and Output Directories
+Run with custom input and output directories:
 
 ```bash
 ./run_with_docker.sh /absolute/path/to/input /absolute/path/to/output
 ```
 
-### Manual Docker Run
+This script:
+
+- builds the Docker image
+- removes the previous run container before starting a new one
+- starts a fresh container for the new run
+- mounts the input directory read-only
+- writes Markdown, logs, and reports to the output directory
+
+## Docker Validation Scripts
+
+Full Docker-only test run:
 
 ```bash
-docker build -t doclingflow2:latest .
-
-docker run --rm \
-  -e TEST_DOCS_DIR=/data/input \
-  -e OUTPUTS_DIR=/data/output \
-  -e DEFAULT_MEMORY_LIMIT_MB=12288 \
-  -v /absolute/path/to/input:/data/input:ro \
-  -v /absolute/path/to/output:/data/output \
-  doclingflow2:latest
+./run_tests_with_docker.sh
 ```
 
-### Docker Compose
+This script:
 
-A `docker-compose.yml` file exists as an alternate entrypoint, but the normal project path is still `run_with_docker.sh`.
+- builds a fresh image
+- removes the previous Docker test container
+- starts a new Docker test container
+- runs `python -m doclingflow --help`
+- runs the full `unittest` suite inside Docker
+
+Representative mixed-format conversion regression:
+
+```bash
+./run_representative_with_docker.sh
+```
+
+This script prepares a smaller mixed input set and then calls the normal `run_with_docker.sh` flow.
+
+Heavy PDF validation run:
+
+```bash
+./run_heavy_pdf_with_docker.sh
+```
+
+This script isolates the expensive PDF paths:
+
+- image-heavy PDFs
+- scan-heavy PDFs
+- long PDFs
+- two-column PDFs
+
+Installability check:
+
+```bash
+./run_install_check_with_docker.sh
+```
+
+This script starts a fresh Python container, installs the project from the mounted source tree, and then runs `doclingflow --help`.
+
+Build artifact check:
+
+```bash
+./run_build_check_with_docker.sh
+```
+
+This script starts a fresh Python container and verifies that the project can build distribution artifacts.
+
+Package metadata validation:
+
+```bash
+./run_twine_check_with_docker.sh
+```
+
+This script builds fresh distribution artifacts in Docker and runs `twine check` against them.
+
+Built-wheel install validation:
+
+```bash
+./run_dist_install_check_with_docker.sh
+```
+
+This script builds a fresh wheel in Docker and then installs that built artifact into a second fresh Docker container.
 
 ## Output Layout
 
-By default, generated files are written under `outputs/`:
+By default, Docker runs write results under `outputs/`:
 
 - `outputs/markdown/`
-  - published Markdown results
-  - per-document artifact directories such as `document.md`, chunk outputs, and exported images
 - `outputs/images/`
-  - reserved image output root
 - `outputs/reports/`
-  - latest CSV and summary JSON
-  - timestamped benchmark history
 - `outputs/logs/`
-  - latest run log
-  - timestamped run logs
 
-The published Markdown file is the top-level result consumed by reports. Artifact Markdown such as `.../<stem>/document.md` is kept for debugging and intermediate inspection.
+The published Markdown file is the main user-facing output. Intermediate artifacts are kept to support debugging and quality inspection.
+
+## Strategy Model
+
+The pipeline does not treat every document the same.
+
+It distinguishes at least these major routes:
+
+- non-PDF direct conversion
+- plain PDF conversion
+- scan-heavy PDF conversion
+- image-heavy PDF conversion
+- two-column PDF conversion
+- long PDF conversion with chunking when safe
+
+Key modules:
+
+- `analyzers/file_analyzer.py`
+- `analyzers/pdf_analyzer.py`
+- `pipeline/strategy_selector.py`
+- `pipeline/task_executor.py`
+- `pipeline/markdown_pipeline.py`
+- `adapters/docling_adapter.py`
+
+## Current Reality Of Heavy PDFs
+
+The project currently succeeds on complex image-heavy PDFs, but those paths are expensive.
+
+In Docker validation, image-heavy long PDFs can take several minutes to finish. That is currently a known cost of the high-fidelity route rather than proof of failure. The project therefore keeps separate Docker validation scripts for:
+
+- faster mixed-format regression
+- heavier PDF-specific validation
 
 ## Configuration
 
-Runtime settings are loaded from environment variables in `config.py`.
+Runtime settings are still environment-driven and are loaded from `config.py`.
 
 Important variables include:
 
@@ -192,86 +222,41 @@ Important variables include:
 - `PDF_CHUNK_SIZE`
 - `PDF_MIN_CHUNK_SIZE`
 
-## Image Handling
+## Package Direction
 
-Image handling is implemented in `processors/image_handler.py`.
+The repository is in the middle of a toolization transition.
 
-Current behavior includes:
+What is already in place:
 
-- normalizing Markdown image references
-- replacing `<!-- image -->` placeholders with real Markdown image links when exported image files exist
-- rewriting references to usable relative paths
-- preserving scan-specific image evidence blocks for OCR-heavy documents
+- `pyproject.toml`
+- `doclingflow` package entrypoint
+- CLI subcommands
+- Docker-only validation scripts
+- installability check inside Docker
 
-## Markdown Repair and Cleanup
+What still needs continued work:
 
-Post-processing is split into dedicated modules:
+- deeper internal implementation migration if the project later wants a stricter package-only layout
+- actual publication to PyPI and a public Docker registry
+- more targeted optimization of the image-heavy PDF path without sacrificing fidelity
 
-- `processors/structure_repair.py`
-- `processors/special_block_handler.py`
-- `processors/markdown_cleaner.py`
-- `processors/formula_detection.py`
-- `processors/math_utils.py`
+## Documentation
 
-These stages are used to improve structural fidelity, especially for PDFs with OCR, formulas, complex blocks, and layout damage.
+Additional docs:
 
-## Reports and Benchmark Rows
+- `docs/INSTALL.md`
+- `docs/CLI.md`
+- `docs/DOCKER_WORKFLOW.md`
+- `docs/OUTPUTS.md`
+- `docs/RELEASE_CHECKLIST.md`
+- `docs/STABLE_INTERFACES.md`
+- `docs/TOOLIZATION_STAGE_REPORT.md`
+- `docs/PUBLISHING.md`
 
-Each run produces:
+## Positioning
 
-- a per-file CSV report
-- a summary JSON
-- a full run log
+This project should be understood as:
 
-The benchmark metrics logic lives in `benchmarks/benchmark_metrics.py`, and row assembly is handled by `pipeline/result_collector.py`.
+**a Docling-based high-fidelity Markdown converter**
 
-Metrics include document-level properties such as:
-
-- strategy mode
-- content type
-- success/failure
-- elapsed time
-- memory usage
-- output page count
-- Markdown statistics
-- OCR-related annotations
-- image reference counts
-
-## Repository Structure
-
-```text
-doclingflow_project/
-├── adapters/          # Docling adapter layer
-├── analyzers/         # file profiling and PDF analysis
-├── benchmarks/        # metrics and report row helpers
-├── pipeline/          # strategy selection, execution, recovery, result collection
-├── processors/        # markdown/image/formula/block post-processing
-├── scripts/           # helper scripts used outside the main runtime
-├── tests/             # unit tests
-├── test_docs/         # bundled sample input set
-├── config.py          # environment-backed settings
-├── document_types.py  # supported suffixes and content-type helpers
-├── Dockerfile
-├── run_with_docker.sh
-└── main.py
-```
-
-## Development Notes
-
-- The runtime is Docker-first.
-- The main conversion backend is Docling.
-- The project favors conversion completeness and information preservation over raw speed.
-- Many outputs keep both published Markdown and intermediate artifacts to make debugging and regression analysis easier.
-
-## Dependencies
-
-Core Python dependencies are listed in `requirements.txt`:
-
-- `docling==2.91.0`
-- `pypdf==5.5.0`
-- `torch==2.2.2`
-- `torchvision==0.17.2`
-- `transformers>=4.57,<5`
-- `numpy==1.26.4`
-
-The Docker image also installs system packages required for conversion and OCR, including LibreOffice, Poppler, and Tesseract.
+It is not meant to replace the core Docling project. It is meant to provide a stricter, more conservative conversion workflow for users who care about preserving document information for downstream LLM use.

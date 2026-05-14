@@ -40,4 +40,4 @@ COPY . .
 RUN mkdir -p /data/input /data/output ${DOCLING_ARTIFACTS_PATH} \
     && python scripts/preload_docling_models.py
 
-CMD ["python", "main.py"]
+CMD ["python", "-m", "doclingflow", "batch", "/data/input", "-o", "/data/output"]

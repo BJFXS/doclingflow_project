@@ -1,0 +1,962 @@
+# doclingflow_project 工具化重构实施规范
+
+本文档是针对当前仓库 `/Users/phil/Desktop/coding_temp_file/doclingflow_project` 的强约束重构方案。目标不是讨论思路，而是给后续执行该任务的 LLM 或工程师提供一份可直接照做的实施规范。执行时应优先遵守本文档；若与仓库中的历史命名、注释风格或临时脚本冲突，以本文档为准，但不得破坏现有核心转换逻辑。
+
+---
+
+## 1. 目标定义
+
+将当前项目从“Docker-first 的批量转换研究仓库”重构为“可安装、可命令行直接调用、可作为 Python 库集成、同时保留 Docker 运行方式的 Docling 增强型转换工具”。
+
+重构后的项目必须满足以下目标：
+
+1. 用户可以不通过 `git clone` 直接安装并使用该项目。
+2. 用户安装后可以直接执行一个统一的 CLI 命令，例如 `doclingflow`。
+3. 项目既支持单文件转换，也支持目录批量转换。
+4. 当前已有的分析、策略选择、OCR 恢复、Markdown 修复、报告生成能力必须被保留。
+5. Docker 从“唯一主入口”降级为“可选运行方式”。
+6. 项目需要具备可发布到 PyPI 的结构。
+7. 对外暴露的工具形态应接近 `docling` 的使用体验，但定位必须明确为“Docling 增强转换器”，而不是冒充官方 `docling`。
+
+---
+
+## 2. 当前仓库状态总结
+
+当前仓库与原始的 DoclingFlow_2 基本等价，只是删去了一部分 md 和 txt 辅助文件；核心转换流水线仍然完整，但还不具备成熟工具的交付结构。
+
+### 2.1 已有核心能力
+
+当前流程主链已经存在，主要由以下模块构成：
+
+- [main.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/main.py:1)
+- [config.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/config.py:1)
+- [pipeline/batch_runner.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/pipeline/batch_runner.py:1)
+- [pipeline/task_executor.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/pipeline/task_executor.py:1)
+- [pipeline/strategy_selector.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/pipeline/strategy_selector.py:1)
+- [pipeline/markdown_pipeline.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/pipeline/markdown_pipeline.py:1)
+- [adapters/docling_adapter.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/adapters/docling_adapter.py:1)
+- [processors/](/Users/phil/Desktop/coding_temp_file/doclingflow_project/processors)
+- [analyzers/](/Users/phil/Desktop/coding_temp_file/doclingflow_project/analyzers)
+- [benchmarks/](/Users/phil/Desktop/coding_temp_file/doclingflow_project/benchmarks)
+- [utils/](/Users/phil/Desktop/coding_temp_file/doclingflow_project/utils)
+
+当前流水线能力总结如下：
+
+1. 按文件类型和 PDF 特征选择策略。
+2. 使用 `DoclingAdapter` 调用 Docling。
+3. 对长 PDF 执行 chunk 计划。
+4. 执行 OCR 质量判断和恢复逻辑。
+5. 对 Markdown 执行结构修复和图片引用修复。
+6. 生成 Markdown、图片、日志、CSV、JSON 报告。
+
+### 2.2 当前不适合直接交付给普通用户的原因
+
+当前仓库存在以下问题：
+
+1. 没有 `pyproject.toml`，不是标准 Python 包。
+2. 没有正式 CLI，只有 `main.py` 和 `run_with_docker.sh`。
+3. `main.py` 是批处理入口，不适合单文件工具使用。
+4. 配置模型偏环境变量驱动，CLI 参数层不完整。
+5. 目录结构按“研究实现”组织，不按“可发布包”组织。
+6. `outputs/`、`test_docs/`、脚本与运行入口高度耦合。
+7. README 介绍的是仓库工作流，不是安装后使用方式。
+
+---
+
+## 3. 产品定位
+
+该项目的目标定位必须明确为：
+
+**DoclingFlow = 基于 Docling 的高保真 Markdown 转换增强器**
+
+不得将项目定位为“另一个 Docling”。定位必须强调以下差异化能力：
+
+1. 自动策略选择。
+2. 长 PDF 分块转换。
+3. 扫描件 / OCR 风险恢复。
+4. Markdown 结构修复。
+5. 面向批量处理的报告输出。
+
+对外文案必须避免误导用户认为这是官方 `docling` 的替代品。正确表述应类似：
+
+> DoclingFlow builds on top of Docling and adds strategy-aware routing, OCR recovery, long-PDF chunking, and post-processing for higher-fidelity Markdown output.
+
+---
+
+## 4. 重构后的最终交付形态
+
+重构完成后，项目必须同时支持以下四种使用方式：
+
+1. Python 包安装后使用 CLI。
+2. Python 代码中直接调用库 API。
+3. 本地源码开发模式运行。
+4. Docker 模式运行。
+
+### 4.1 用户期望体验
+
+用户应能执行以下操作：
+
+```bash
+pip install doclingflow
+doclingflow --help
+doclingflow convert input.pdf -o output.md
+doclingflow batch ./docs -o ./outputs
+doclingflow inspect input.pdf
+doclingflow doctor
+```
+
+开发者应能执行以下操作：
+
+```bash
+pip install -e .
+pytest
+doclingflow convert sample.pdf -o out.md
+```
+
+Docker 用户应仍然可以执行：
+
+```bash
+./run_with_docker.sh ./docs ./outputs
+```
+
+但该路径不再是默认主路径。
+
+---
+
+## 5. 强制性约束
+
+执行重构时必须遵守以下规则。
+
+### 5.1 必须保留的内容
+
+以下能力必须保留，除非明确发现逻辑错误且有充分测试支持修复：
+
+1. `DoclingAdapter` 的核心转换逻辑。
+2. `strategy_selector` 的决策能力。
+3. `task_executor` 的进程级执行与恢复能力。
+4. `markdown_pipeline` 与 `processors` 中的 Markdown 修复逻辑。
+5. 当前 CSV / JSON 报告能力。
+
+### 5.2 初期不得做的事
+
+第一轮工具化重构不得做以下事情：
+
+1. 不得重写算法。
+2. 不得把当前策略系统简化成只剩单一路径。
+3. 不得为了包化而删除报告功能。
+4. 不得把所有环境变量逻辑粗暴删除。
+5. 不得引入与当前实现无关的大规模框架。
+6. 不得先做 UI，再补 CLI。
+7. 不得直接把仓库改成只有 Docker 可用。
+
+### 5.3 实施原则
+
+重构策略必须是“外层接口重建，内层能力复用”，即：
+
+1. 先建立新包结构和 CLI。
+2. 然后把旧模块逐步迁移进包命名空间。
+3. 尽量保持核心函数行为不变。
+4. 通过兼容层减少一次性大改风险。
+
+---
+
+## 6. 推荐包名与命令名
+
+### 6.1 发布包名
+
+建议发布包名：
+
+- `doclingflow`
+
+备选：
+
+- `doclingflow-cli`
+- `doclingflow-tool`
+
+首选 `doclingflow`，原因：
+
+1. 简短。
+2. 与项目名高度一致。
+3. 适合 PyPI 包名与 CLI 名保持一致。
+
+### 6.2 CLI 命令名
+
+建议 CLI 命令名：
+
+- `doclingflow`
+
+不得使用：
+
+- `docling`
+- `docling-convert`
+
+原因：会与官方项目产生混淆。
+
+---
+
+## 7. 目标目录结构
+
+重构后的仓库必须趋向以下结构：
+
+```text
+doclingflow_project/
+├── doclingflow/
+│   ├── __init__.py
+│   ├── __main__.py
+│   ├── cli.py
+│   ├── config.py
+│   ├── constants.py
+│   ├── api.py
+│   ├── models.py
+│   ├── runtime/
+│   │   ├── __init__.py
+│   │   ├── batch.py
+│   │   ├── single.py
+│   │   ├── executor.py
+│   │   └── services.py
+│   ├── adapters/
+│   ├── analyzers/
+│   ├── benchmarks/
+│   ├── pipeline/
+│   ├── processors/
+│   └── utils/
+├── tests/
+├── scripts/
+├── Dockerfile
+├── run_with_docker.sh
+├── pyproject.toml
+├── README.md
+└── requirements.txt
+```
+
+说明：
+
+1. 当前根目录下的 `adapters/`、`analyzers/`、`benchmarks/`、`pipeline/`、`processors/`、`utils/` 必须迁移到 `doclingflow/` 包内。
+2. 初期可以保留兼容导入层，但最终对外应通过 `doclingflow.*` 导入。
+3. 当前 `main.py` 不应再作为主入口；其逻辑应拆分到 `doclingflow/runtime/batch.py` 或 `doclingflow/cli.py`。
+
+---
+
+## 8. 当前文件到新结构的映射
+
+必须优先按下列映射进行迁移。
+
+### 8.1 直接迁移
+
+- `adapters/` -> `doclingflow/adapters/`
+- `analyzers/` -> `doclingflow/analyzers/`
+- `benchmarks/` -> `doclingflow/benchmarks/`
+- `pipeline/` -> `doclingflow/pipeline/`
+- `processors/` -> `doclingflow/processors/`
+- `utils/` -> `doclingflow/utils/`
+
+### 8.2 文件重组
+
+- `config.py` -> `doclingflow/config.py`
+- `document_types.py` -> `doclingflow/constants.py` 或 `doclingflow/document_types.py`
+- `main.py` -> 拆分到：
+  - `doclingflow/runtime/batch.py`
+  - `doclingflow/cli.py`
+  - `doclingflow/__main__.py`
+
+### 8.3 可以保留在根目录的内容
+
+- `Dockerfile`
+- `run_with_docker.sh`
+- `README.md`
+- `pyproject.toml`
+- `requirements.txt`
+- `tests/`
+- `scripts/`
+
+### 8.4 不应进入发布包的内容
+
+以下内容不应作为包安装后的默认数据强行发布：
+
+- `outputs/`
+- 大体积测试样本
+- 临时笔记文件
+- 本地实验产物
+
+`test_docs/` 是否随源码保留可以接受，但不建议作为 wheel 的默认安装数据。
+
+---
+
+## 9. 包 API 设计
+
+必须提供最小但稳定的公共 API，供其他 Python 项目直接调用。
+
+### 9.1 必须提供的 API
+
+建议在 `doclingflow/api.py` 暴露以下函数：
+
+```python
+def convert_file(input_path: str | Path, output_path: str | Path | None = None, **options) -> ConversionResult:
+    ...
+
+def convert_batch(input_dir: str | Path, output_dir: str | Path, **options) -> BatchRunResult:
+    ...
+
+def inspect_file(input_path: str | Path, **options) -> InspectionResult:
+    ...
+```
+
+### 9.2 API 设计原则
+
+1. `convert_file()` 必须面向单文件场景。
+2. `convert_batch()` 复用当前 `run_batch()` 主能力。
+3. `inspect_file()` 只做分析，不做转换。
+4. API 参数应优先显式，而不是要求用户手工设置环境变量。
+5. API 返回值必须是结构化对象，而不是仅打印日志。
+
+### 9.3 返回模型建议
+
+建议在 `doclingflow/models.py` 中定义：
+
+- `ConversionResult`
+- `BatchRunResult`
+- `InspectionResult`
+- `CliExitSummary`
+
+这些模型优先使用 `dataclass`，避免引入不必要的额外依赖。
+
+---
+
+## 10. CLI 设计规范
+
+CLI 必须使用 `typer` 或 `click` 实现。优先推荐 `typer`，因为：
+
+1. 可读性高。
+2. 参数定义简洁。
+3. 自动生成 `--help`。
+4. 便于扩展子命令。
+
+### 10.1 CLI 子命令集合
+
+第一版必须提供以下子命令：
+
+1. `convert`
+2. `batch`
+3. `inspect`
+4. `doctor`
+5. `version`
+
+### 10.2 `convert` 命令规范
+
+用途：转换单个文件。
+
+示例：
+
+```bash
+doclingflow convert input.pdf -o output.md
+doclingflow convert input.pdf --output-dir ./out
+doclingflow convert input.pdf --strategy auto --ocr auto
+```
+
+必须支持的参数：
+
+- `input_path`
+- `-o, --output`
+- `--output-dir`
+- `--strategy`
+- `--ocr`
+- `--image-mode`
+- `--emit-report`
+- `--keep-artifacts`
+- `--timeout`
+- `--memory-limit-mb`
+- `--json`
+
+规则：
+
+1. `-o/--output` 用于指定最终 markdown 文件。
+2. 如果传 `--output-dir`，则自动推导 markdown 文件名。
+3. 不得强制用户总是输出整套报告。
+4. 默认应输出最终 markdown，并在必要时输出附属图片。
+
+### 10.3 `batch` 命令规范
+
+用途：递归处理目录。
+
+示例：
+
+```bash
+doclingflow batch ./docs -o ./outputs
+doclingflow batch ./docs -o ./outputs --emit-report csv,json
+```
+
+必须支持的参数：
+
+- `input_dir`
+- `-o, --output-dir`
+- `--strategy`
+- `--ocr`
+- `--workers`
+- `--emit-report`
+- `--keep-artifacts`
+- `--fail-fast`
+- `--include`
+- `--exclude`
+
+规则：
+
+1. 该命令必须复用现有 `run_batch()` 能力。
+2. 可以先保留单进程批处理，再迭代多 worker。
+3. `workers` 初版可接受只支持 `1`，但 CLI 参数位必须预留。
+
+### 10.4 `inspect` 命令规范
+
+用途：只分析，不转换。
+
+示例：
+
+```bash
+doclingflow inspect input.pdf
+doclingflow inspect input.pdf --json
+```
+
+输出至少应包含：
+
+1. 文件类型。
+2. PDF / 非 PDF 分类。
+3. 页数。
+4. 推断策略。
+5. 是否可能是扫描件。
+6. 是否建议分块。
+
+### 10.5 `doctor` 命令规范
+
+用途：检查运行环境。
+
+必须检查：
+
+1. Python 版本。
+2. `docling` 是否可导入。
+3. OCR 后端是否可用。
+4. 关键依赖是否满足。
+5. 可选地检查 Docker 是否存在。
+
+输出必须清晰标记 `OK` / `WARN` / `FAIL`。
+
+### 10.6 `version` 命令规范
+
+必须输出：
+
+1. `doclingflow` 版本。
+2. `docling` 版本。
+3. Python 版本。
+
+---
+
+## 11. 配置系统重构规范
+
+当前项目使用 [config.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/config.py:1) 基于环境变量加载 `Settings`。该机制本身可以保留，但必须被封装为“CLI 参数优先，环境变量兜底”的双层模型。
+
+### 11.1 必须实现的配置优先级
+
+配置优先级必须为：
+
+1. 显式 CLI 参数
+2. API 函数显式参数
+3. 环境变量
+4. 内建默认值
+
+### 11.2 必须新增的能力
+
+需要增加以下配置构造方式：
+
+```python
+settings = load_settings_from_runtime_options(...)
+```
+
+或等价实现，使得：
+
+1. CLI 不需要依赖环境变量才能工作。
+2. 测试中可直接传配置对象。
+3. Docker 仍可继续使用环境变量方案。
+
+### 11.3 配置拆分建议
+
+建议拆出以下配置模型：
+
+- `PathSettings`
+- `TimeoutSettings`
+- `ChunkSettings`
+- `OcrSettings`
+- `RuntimeSettings`
+- `DockerSettings`
+
+但第一版不要求过度建模；若改动过大，可先在现有 `Settings` 之上加一个运行时覆盖层。
+
+---
+
+## 12. 输出行为重构规范
+
+当前 `outputs/` 结构偏工程化。重构后必须区分“用户默认输出”和“调试输出”。
+
+### 12.1 默认模式
+
+默认模式应尽量简洁：
+
+1. 输出最终 Markdown。
+2. 仅在需要时输出配套图片目录。
+3. 不默认输出调试 chunk 目录。
+4. 不默认输出全量历史 benchmark 结果。
+
+### 12.2 调试模式
+
+当用户显式使用以下参数时再生成更多产物：
+
+- `--keep-artifacts`
+- `--emit-report`
+- `--debug`
+
+调试模式可输出：
+
+1. 中间 chunk 目录。
+2. 原始 `document.md`。
+3. 完整日志。
+4. CSV / JSON 报告。
+
+### 12.3 单文件转换输出规则
+
+单文件转换场景建议输出结构如下：
+
+```text
+out/
+├── input.md
+└── input_assets/
+```
+
+如启用调试：
+
+```text
+out/
+├── input.md
+├── input_assets/
+├── reports/
+└── debug/
+```
+
+### 12.4 批处理输出规则
+
+批处理场景可以延续当前结构，但应规范命名，例如：
+
+```text
+outputs/
+├── markdown/
+├── images/
+├── reports/
+└── logs/
+```
+
+---
+
+## 13. 运行时实现策略
+
+### 13.1 单文件转换必须成为一等能力
+
+当前仓库偏重批量处理。重构后必须增加单文件转换路径，建议新增：
+
+- `doclingflow/runtime/single.py`
+
+职责：
+
+1. 接受单个输入文件。
+2. 调用 `analyze_file()`。
+3. 调用 `select_strategy()`。
+4. 调用 `run_task()`。
+5. 组装单文件结果对象。
+6. 处理更简洁的输出布局。
+
+### 13.2 批处理能力必须复用现有逻辑
+
+当前 [pipeline/batch_runner.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/pipeline/batch_runner.py:1) 不应被直接删除。应做以下改造：
+
+1. 把其逻辑迁移或包装为 `doclingflow/runtime/batch.py`。
+2. 将“打印日志”和“业务逻辑”分离。
+3. 允许调用方控制是否持续写 rolling report。
+
+### 13.3 执行器应尽量少改
+
+[pipeline/task_executor.py](/Users/phil/Desktop/coding_temp_file/doclingflow_project/pipeline/task_executor.py:1) 是高风险模块。第一阶段只做下列改动：
+
+1. 修正导入路径。
+2. 让其兼容新的配置对象。
+3. 让其可用于单文件和批处理两种调用方。
+
+不要第一阶段就重写其多进程、监控、重试逻辑。
+
+---
+
+## 14. 包装与发布规范
+
+### 14.1 必须新增 `pyproject.toml`
+
+必须使用 PEP 621 风格定义包元数据。建议最小形态如下：
+
+```toml
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doclingflow"
+version = "0.1.0"
+description = "Strategy-aware high-fidelity Markdown conversion built on top of Docling."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "docling==2.91.0",
+  "pypdf==5.5.0",
+  "numpy==1.26.4",
+  "torch==2.2.2",
+  "torchvision==0.17.2",
+  "transformers>=4.57,<5",
+  "typer>=0.12,<1",
+]
+
+[project.scripts]
+doclingflow = "doclingflow.cli:app"
+```
+
+说明：
+
+1. 以上版本应先与当前 `requirements.txt` 对齐。
+2. 发布前可以再细化 extras，但第一阶段先求可安装可运行。
+
+### 14.2 安装方式文档
+
+README 必须增加以下安装方式：
+
+```bash
+pip install doclingflow
+```
+
+```bash
+pipx install doclingflow
+```
+
+开发模式：
+
+```bash
+pip install -e .
+```
+
+### 14.3 “不用 git clone” 的实现路径
+
+这件事的标准答案是：
+
+1. 将项目变为标准 Python 包。
+2. 发布到 PyPI。
+3. 暴露控制台脚本 `doclingflow`。
+
+可选扩展：
+
+1. 未来支持 `uvx doclingflow ...`
+2. 未来支持 Homebrew
+3. 未来提供 Docker 镜像
+
+但第一阶段不要求打包独立二进制。
+
+---
+
+## 15. README 与文档重写规范
+
+README 必须从“仓库说明文档”改成“工具说明文档”。
+
+### 15.1 README 首页结构
+
+必须按以下顺序组织：
+
+1. 一句话定位
+2. 核心能力
+3. 安装方式
+4. 最小示例
+5. 单文件 CLI 示例
+6. 批处理 CLI 示例
+7. Python API 示例
+8. 支持格式
+9. 常见问题
+
+### 15.2 文档语气
+
+文档必须明确：
+
+1. 本工具构建于 Docling 之上。
+2. 更适合复杂 PDF、扫描件、高保真 Markdown 场景。
+3. 若只需要最基础转换，可直接使用官方 `docling`。
+
+### 15.3 示例必须真实
+
+示例命令必须与最终 CLI 一致，不允许 README 写的命令和实现不匹配。
+
+---
+
+## 16. 测试重构规范
+
+### 16.1 现有测试必须尽量保留
+
+当前 `tests/` 中已有的模块测试必须尽量继续可运行。第一阶段可以通过兼容导入或路径调整实现。
+
+### 16.2 必须新增的测试
+
+第一轮工具化必须新增以下测试：
+
+1. CLI `--help` 测试。
+2. CLI `convert` 单文件 happy path 测试。
+3. CLI `inspect` 输出测试。
+4. 配置优先级测试。
+5. 包入口导入测试。
+
+### 16.3 测试分层建议
+
+建议分成：
+
+1. `tests/unit/`
+2. `tests/integration/`
+3. `tests/cli/`
+
+若当前仓库不想大改目录，也可暂缓；但至少要新增 CLI 相关测试文件。
+
+---
+
+## 17. Docker 重构规范
+
+Docker 必须保留，但角色改变。
+
+### 17.1 Docker 的新定位
+
+Docker 变成以下场景的支持项：
+
+1. 复现实验环境
+2. 避免本地依赖安装复杂
+3. CI 或服务器环境部署
+
+### 17.2 Docker 入口策略
+
+`run_with_docker.sh` 可以继续保留，但建议修改为调用新的包入口，而不是老的 `main.py` 习惯式结构。
+
+目标应类似：
+
+```bash
+python -m doclingflow batch /data/input -o /data/output
+```
+
+### 17.3 Docker 文档
+
+README 中必须把 Docker 使用说明放到“可选运行方式”章节，不要放在最前面。
+
+---
+
+## 18. 分阶段实施顺序
+
+后续执行此方案时，必须按以下顺序进行，不得跳步骤。
+
+### Phase 1: 包结构初始化
+
+目标：让仓库成为标准 Python 包。
+
+必须完成：
+
+1. 创建 `doclingflow/` 包目录。
+2. 新增 `__init__.py`、`__main__.py`、`cli.py`、`api.py`。
+3. 新增 `pyproject.toml`。
+4. 保持项目仍可本地运行。
+
+验收标准：
+
+1. `pip install -e .` 成功。
+2. `python -m doclingflow --help` 可运行。
+
+### Phase 2: 迁移内部模块
+
+目标：把当前核心逻辑纳入包命名空间。
+
+必须完成：
+
+1. 迁移 `adapters/`、`analyzers/`、`benchmarks/`、`pipeline/`、`processors/`、`utils/` 到 `doclingflow/`。
+2. 修复导入路径。
+3. 将 `config.py` 迁移为 `doclingflow/config.py`。
+
+验收标准：
+
+1. 单元测试基本恢复。
+2. 现有批量流程仍能跑通。
+
+### Phase 3: 建立单文件转换路径
+
+目标：让工具真正像用户工具而不是仅仅批处理脚本。
+
+必须完成：
+
+1. 新增单文件 runtime。
+2. CLI `convert` 接通。
+3. 单文件输出目录结构稳定。
+
+验收标准：
+
+1. `doclingflow convert sample.pdf -o sample.md` 可运行。
+
+### Phase 4: 批处理 CLI 化
+
+目标：将当前批处理逻辑工具化。
+
+必须完成：
+
+1. CLI `batch` 接通。
+2. 输出目录参数化。
+3. 报告生成行为参数化。
+
+验收标准：
+
+1. `doclingflow batch ./test_docs -o ./outputs` 可运行。
+
+### Phase 5: 辅助命令与文档
+
+目标：补齐工具体验。
+
+必须完成：
+
+1. `inspect`
+2. `doctor`
+3. `version`
+4. README 重写
+
+验收标准：
+
+1. CLI 帮助页完整。
+2. README 示例可实际运行。
+
+### Phase 6: 发布准备
+
+目标：具备可分发能力。
+
+必须完成：
+
+1. 构建 sdist / wheel。
+2. 完成发布元数据。
+3. 校验 `pipx install .`。
+
+验收标准：
+
+1. 本地构建成功。
+2. 本地安装后命令可直接运行。
+
+---
+
+## 19. 具体实施细节建议
+
+### 19.1 首轮不要激进重命名业务函数
+
+例如：
+
+- `run_batch()` 可以保留原名。
+- `run_task()` 可以保留原名。
+- `select_strategy()` 可以保留原名。
+
+优先移动位置和修复导入，不要先做语义级重命名。
+
+### 19.2 引入兼容层
+
+如果测试和旧脚本较多，可在短期内保留兼容导出，例如：
+
+根目录旧模块中仅保留薄封装，转发到新包路径。但这只是过渡层，不是长期结构。
+
+### 19.3 不要把所有配置都塞进 CLI 函数签名
+
+CLI 层只接受对用户重要的参数。
+
+内部复杂参数应使用配置对象聚合，否则 CLI 会膨胀失控。
+
+### 19.4 单文件与批处理必须共享核心服务层
+
+不要写两套转换逻辑。建议：
+
+1. 单文件与批处理都走同一套分析、选策略、执行、后处理。
+2. 差异只体现在输入收集、输出布局、报告输出策略。
+
+---
+
+## 20. 交付验收标准
+
+只有满足以下条件，才能认为该项目已经从仓库转化为“可供别人方便使用的工具”。
+
+### 20.1 安装验收
+
+必须满足：
+
+1. `pip install -e .` 成功。
+2. `python -m doclingflow --help` 成功。
+3. `doclingflow --help` 成功。
+
+### 20.2 使用验收
+
+必须满足：
+
+1. `doclingflow convert <file>` 可处理单个文件。
+2. `doclingflow batch <dir>` 可处理目录。
+3. `doclingflow inspect <file>` 可输出分析信息。
+4. `doclingflow doctor` 可检查环境。
+
+### 20.3 兼容性验收
+
+必须满足：
+
+1. Docker 路径仍可使用。
+2. 现有核心策略行为未明显退化。
+3. 原有测试至少大部分恢复通过。
+
+### 20.4 发布验收
+
+必须满足：
+
+1. 可构建 wheel。
+2. CLI entry point 正常。
+3. README 的安装命令与实际分发方式一致。
+
+---
+
+## 21. 给后续执行 LLM 的强制指令
+
+如果后续由 LLM 按本方案施工，必须遵守以下执行规则：
+
+1. 先读本文档，再读当前仓库结构，不得跳过现状核对。
+2. 不得先写空壳文档再补实现；必须按阶段落地代码。
+3. 不得只创建 `pyproject.toml` 和 CLI 壳子就宣称完成。
+4. 不得删除当前策略和后处理能力来换取“看起来更整洁”的结构。
+5. 所有迁移都必须以“保留现有能力”为前提。
+6. 第一轮实现优先解决“可安装、可调用、可保留能力”，而不是追求完美架构。
+7. 每完成一个 phase，都必须执行对应的最小验证。
+8. 若某一步需要临时兼容层，应明确标注为过渡设计。
+9. 未验证的 README 示例不得写入最终文档。
+10. 若发现当前代码与本方案冲突，应优先保留功能正确性，再局部调整结构，但必须解释偏差原因。
+
+---
+
+## 22. 推荐的第一轮落地范围
+
+如果要控制风险，第一轮建议只完成以下范围：
+
+1. 新建 `doclingflow` 包。
+2. 新增 `pyproject.toml`。
+3. 接通 `doclingflow convert` 和 `doclingflow batch`。
+4. 保留现有内部逻辑，先不大改算法。
+5. 将 Docker 改为调用新入口。
+6. README 改成安装和 CLI 导向。
+
+这会让项目尽快跨过“研究仓库”到“可用工具”的门槛。
+
+---
+
+## 23. 结论
+
+当前项目距离“方便别人使用的工具”并不远，缺的不是核心转换能力，而是：
+
+1. 标准包结构
+2. 正式 CLI
+3. 稳定 API
+4. 清晰安装路径
+5. 文档与分发体系
+
+因此，本项目的正确改造路径不是重写转换逻辑，而是对现有核心能力做“产品化包装”。只要严格按本文档推进，最终就可以实现与 `docling` 类似的使用体验：用户无需 `git clone`，而是直接通过包管理器安装，并用 `doclingflow` 命令完成转换。

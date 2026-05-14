@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import inspect
+import time
 from typing import Any
 
 from document_types import SUPPORTED_DOCUMENT_SUFFIXES
@@ -38,6 +39,15 @@ class DoclingAdapter(BaseAdapter):
             source_pages: list[str] = []
             output_pages = 0
             for index, plan in enumerate(chunk_plans, start=1):
+                chunk_started_at = time.perf_counter()
+                page_range = getattr(plan, "page_range", None)
+                print(
+                    f"    chunk {index}/{len(chunk_plans)} start"
+                    f" page_range={page_range}"
+                    f" ocr={int(bool(getattr(plan, 'enable_ocr', False)))}"
+                    f" scale={getattr(plan, 'images_scale', 1.0)}",
+                    flush=True,
+                )
                 chunk_output_dir = doc_output_dir / f"chunk_{index:03d}"
                 result = _convert_single(
                     converter=converter,
@@ -51,6 +61,12 @@ class DoclingAdapter(BaseAdapter):
                 images.extend(result["images"])
                 source_pages.extend(result["source_pages"])
                 output_pages += result["output_page_count"] or 0
+                print(
+                    f"    chunk {index}/{len(chunk_plans)} done"
+                    f" elapsed_sec={time.perf_counter() - chunk_started_at:.2f}"
+                    f" output_pages={result['output_page_count']}",
+                    flush=True,
+                )
             merged_markdown = "\n\n".join(part.strip() for part in markdown_parts if part.strip()).strip() + "\n"
             return AdapterConversionResult(
                 markdown=merged_markdown,

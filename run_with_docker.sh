@@ -36,4 +36,5 @@ docker run --rm \
   -e DEFAULT_MEMORY_LIMIT_MB="${DEFAULT_MEMORY_LIMIT_MB}" \
   -v "${INPUT_DIR}:/data/input:ro" \
   -v "${OUTPUT_DIR}:/data/output" \
-  "${IMAGE_NAME}"
+  "${IMAGE_NAME}" \
+  python -m doclingflow batch /data/input -o /data/output

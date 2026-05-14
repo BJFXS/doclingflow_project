@@ -7,11 +7,9 @@ import json
 import tempfile
 from pathlib import Path
 
-from analyzers.file_analyzer import analyze_file
-from config import load_settings
-from pipeline.batch_runner import build_adapters_from_settings
-from pipeline.strategy_selector import select_strategy
-from pipeline.task_executor import run_task
+from doclingflow.config import load_settings
+from doclingflow.pipeline import build_adapters_from_settings, run_task, select_strategy
+from doclingflow.analyzers import analyze_file
 
 
 def main() -> None:
@@ -35,8 +33,7 @@ def main() -> None:
         profile = analyze_file(src)
         strategy = select_strategy(profile, settings)
         out_md = base / f"{doc_id}.md"
-        image_dir = base / f"{doc_id}_images"
-        payload = run_task(src, out_md, image_dir, adapters, strategy, profile, settings, log_path)
+        payload = run_task(src, out_md, adapters, strategy, profile, settings, log_path)
         text = out_md.read_text(encoding="utf-8") if out_md.exists() else ""
         results.append(
             {

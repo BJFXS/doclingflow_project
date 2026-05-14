@@ -1,0 +1,50 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "doclingflow"
+version = "0.1.0"
+description = "Strategy-aware high-fidelity Markdown conversion built on top of Docling."
+readme = "README.md"
+requires-python = ">=3.10"
+license = "LicenseRef-Proprietary"
+authors = [
+  { name = "doclingflow_project maintainers" }
+]
+keywords = ["docling", "markdown", "pdf", "document-conversion", "llm"]
+classifiers = [
+  "Development Status :: 4 - Beta",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Intended Audience :: Science/Research",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.10",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Topic :: Software Development :: Libraries",
+  "Topic :: Text Processing :: Markup",
+]
+dependencies = [
+  "numpy==1.26.4",
+  "torch==2.2.2",
+  "torchvision==0.17.2",
+  "transformers>=4.57,<5",
+  "docling==2.91.0",
+  "pypdf==5.5.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/BJFXS/doclingflow_project"
+Repository = "https://github.com/BJFXS/doclingflow_project"
+Documentation = "https://github.com/BJFXS/doclingflow_project/tree/main/docs"
+Issues = "https://github.com/BJFXS/doclingflow_project/issues"
+
+[project.scripts]
+doclingflow = "doclingflow.cli:main"
+
+[tool.setuptools]
+py-modules = ["config", "document_types", "main"]
+
+[tool.setuptools.packages.find]
+include = ["doclingflow*", "adapters*", "analyzers*", "benchmarks*", "pipeline*", "processors*", "utils*"]
