@@ -5,8 +5,8 @@ from __future__ import annotations
 from dataclasses import replace
 from pathlib import Path
 
+from adapters import build_default_adapters
 from adapters.base_adapter import BaseAdapter
-from adapters.docling_adapter import DoclingAdapter
 from analyzers.file_analyzer import FileProfile, analyze_file
 from config import Settings
 from pipeline.strategy_selector import (
@@ -22,7 +22,7 @@ from pipeline.strategy_selector import (
 def build_adapters() -> list[BaseAdapter]:
     """Return the active adapter stack for conversions."""
 
-    return [DoclingAdapter()]
+    return build_default_adapters()
 
 
 def inspect_document(doc_path: Path, settings: Settings) -> tuple[FileProfile, ProcessingStrategy]:
@@ -58,6 +58,9 @@ def apply_runtime_overrides(
             "two-column": "pdf_two_column",
         }.get(strategy_name)
         if target_content_type is not None:
+            # A manual strategy override must rebuild the PDF runtime profile
+            # rather than only renaming the route, otherwise OCR/chunking
+            # behavior would still reflect the auto-selected content type.
             runtime = _build_pdf_runtime_options(profile, target_content_type, settings)
             is_long = bool(profile.is_long_document)
             chunk_plans = tuple(_build_chunk_plans(profile, runtime, settings)) if updated.allow_chunking and is_long else ()
@@ -88,15 +91,18 @@ def apply_runtime_overrides(
     )
 
     if disable_chunking:
+        # Treat explicit chunking disablement as a hard user override so later
+        # retries do not silently re-enable page-range execution.
         updated = replace(updated, use_chunking=False, allow_chunking=False, chunk_plans=())
 
     return updated
 
 
-def derive_single_output_path(input_path: Path, output_path: Path | None, output_dir: Path | None) -> Path:
-    """Resolve the final published markdown path for one conversion."""
+def derive_single_output_layout(input_path: Path, output_path: Path | None, output_dir: Path | None) -> tuple[Path, Path]:
+    """Resolve the output root plus the published Markdown path for one conversion."""
 
     if output_path is not None:
-        return output_path.expanduser().resolve()
-    base_dir = output_dir.expanduser().resolve() if output_dir is not None else input_path.parent.resolve()
-    return base_dir / f"{input_path.stem}.md"
+        final_output_path = output_path.expanduser().resolve()
+        return final_output_path.parent, final_output_path
+    output_root = output_dir.expanduser().resolve() if output_dir is not None else input_path.parent.resolve()
+    return output_root, output_root / "markdown" / f"{input_path.stem}.md"

@@ -6,6 +6,7 @@ By default, conversion runs write artifacts under `outputs/`.
 
 - `outputs/markdown/`
 - `outputs/images/`
+- `outputs/artifacts/`
 - `outputs/reports/`
 - `outputs/logs/`
 
@@ -13,11 +14,10 @@ By default, conversion runs write artifacts under `outputs/`.
 
 The published Markdown files under `outputs/markdown/` are the main user-facing results.
 
-The repository may also keep intermediate artifacts for debugging and inspection, including:
+The repository keeps intermediate artifacts for debugging and inspection under `outputs/artifacts/`, including:
 
 - per-document working directories
 - chunk directories for long PDFs
-- exported images
 - intermediate `document.md` files
 
 ## Reports

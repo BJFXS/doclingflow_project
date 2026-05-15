@@ -11,7 +11,7 @@ from document_types import classify_document_content_type, is_supported_document
 def ensure_dirs(settings: Settings) -> None:
     """Create the output directories expected by one batch run."""
 
-    for path in (settings.markdown_dir, settings.images_dir, settings.reports_dir, settings.logs_dir):
+    for path in (settings.markdown_dir, settings.images_dir, settings.artifacts_dir, settings.reports_dir, settings.logs_dir):
         path.mkdir(parents=True, exist_ok=True)
 
 
@@ -48,6 +48,15 @@ def make_output_md_path(settings: Settings, doc_path: Path, doc_id: str) -> Path
     return out_dir / f"{doc_id}.md"
 
 
+def make_intermediate_artifact_root(settings: Settings, doc_path: Path) -> Path:
+    """Mirror the input tree under the internal artifacts root."""
+
+    relative_parent = doc_path.parent.relative_to(settings.test_docs_dir)
+    out_dir = settings.artifacts_dir / relative_parent
+    out_dir.mkdir(parents=True, exist_ok=True)
+    return out_dir
+
+
 def remove_stale_output(path: Path) -> None:
     """Delete an old published Markdown file if it already exists."""
 
@@ -71,6 +80,23 @@ def remove_related_outputs(out_dir: Path, doc_path: Path, doc_type: str) -> None
     for path in out_dir.iterdir():
         if path.is_file() and path.suffix.lower() in {".md", ".txt"} and path.stem in candidates:
             path.unlink(missing_ok=True)
+
+
+def relocate_intermediate_markdown(source_root: Path, target_root: Path) -> list[Path]:
+    """Move intermediate document Markdown files into the internal artifacts tree."""
+
+    if not source_root.exists():
+        return []
+    moved: list[Path] = []
+    for source_path in sorted(source_root.rglob("document.md")):
+        relative_path = source_path.relative_to(source_root)
+        target_path = target_root / relative_path
+        target_path.parent.mkdir(parents=True, exist_ok=True)
+        if target_path.exists():
+            target_path.unlink()
+        source_path.replace(target_path)
+        moved.append(target_path)
+    return moved
 
 
 def _infer_doc_id(doc_path: Path) -> str:

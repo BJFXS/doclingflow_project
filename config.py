@@ -38,6 +38,7 @@ class Settings:
     outputs_dir: Path
     markdown_dir: Path
     images_dir: Path
+    artifacts_dir: Path
     reports_dir: Path
     logs_dir: Path
     convert_timeout_sec: float
@@ -73,6 +74,7 @@ def load_settings() -> Settings:
         outputs_dir=outputs_dir,
         markdown_dir=outputs_dir / "markdown",
         images_dir=outputs_dir / "images",
+        artifacts_dir=outputs_dir / "artifacts",
         reports_dir=reports_dir,
         logs_dir=outputs_dir / "logs",
         convert_timeout_sec=float(os.getenv("CONVERT_TIMEOUT_SEC", "900")),

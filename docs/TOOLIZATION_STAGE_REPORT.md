@@ -15,7 +15,7 @@ This document records the current completion state of the non-PDF toolization wo
 - README has been rewritten as a tool-oriented document
 - focused docs have been added under `docs/`
 - stable interface boundaries are now documented
-- package namespace compatibility wrappers now exist for the main internal module groups
+- package-level namespaces now exist for the main internal module groups
 
 ## What This Means
 
@@ -33,6 +33,7 @@ It now behaves like a tool project with:
 
 - image-heavy and other complex PDF path optimization
 - deeper internal implementation migration away from root-level modules
+- removal of redundant deep wrapper modules under `doclingflow/*`
 - actual external publication to PyPI and a public Docker registry
 
 Those items are intentionally separate from this non-PDF toolization stage.

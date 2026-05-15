@@ -161,6 +161,40 @@ class StrategySelectorTests(unittest.TestCase):
         self.assertEqual(strategy.content_type, "pdf_image")
         self.assertFalse(strategy.enable_ocr)
 
+    def test_long_pdf_image_uses_smaller_conservative_chunks(self) -> None:
+        profile = FileProfile(
+            path=Path("image-heavy-long.pdf"),
+            suffix=".pdf",
+            size_bytes=30 * 1024 * 1024,
+            size_mb=30.0,
+            page_count=120,
+            is_long_document=True,
+            is_image_heavy=True,
+            content_type="pdf_image",
+            family="pdf",
+        )
+        strategy = select_strategy(profile, load_settings())
+        self.assertTrue(strategy.use_chunking)
+        self.assertEqual(strategy.chunk_plans[0].page_range, (1, 12))
+        self.assertTrue(all(plan.memory_profile == "conservative" for plan in strategy.chunk_plans))
+
+    def test_long_pdf_scan_uses_smaller_conservative_chunks(self) -> None:
+        profile = FileProfile(
+            path=Path("scan-long.pdf"),
+            suffix=".pdf",
+            size_bytes=30 * 1024 * 1024,
+            size_mb=30.0,
+            page_count=66,
+            is_long_document=True,
+            is_scan_like=True,
+            content_type="pdf_scan",
+            family="pdf",
+        )
+        strategy = select_strategy(profile, load_settings())
+        self.assertTrue(strategy.use_chunking)
+        self.assertEqual(strategy.chunk_plans[0].page_range, (1, 10))
+        self.assertTrue(all(plan.memory_profile == "conservative" for plan in strategy.chunk_plans))
+
 
 if __name__ == "__main__":
     unittest.main()

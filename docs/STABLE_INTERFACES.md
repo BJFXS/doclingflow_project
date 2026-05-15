@@ -30,7 +30,11 @@ This file defines the interfaces that should be treated as stable for normal use
 
 ## Stable Package Namespaces
 
-These package paths should be preferred over direct root-level imports:
+These package paths should be preferred over direct root-level imports.
+
+Only the package-level exports are treated as stable. Deep submodule paths such as
+`doclingflow.pipeline.task_executor` or `doclingflow.processors.image_handler`
+are not part of the stable contract.
 
 - `doclingflow.adapters`
 - `doclingflow.analyzers`
@@ -42,6 +46,9 @@ These package paths should be preferred over direct root-level imports:
 
 ## Compatibility Layer
 
-Root-level modules still exist and are still used internally.
+Root-level modules still exist and are still used as the implementation source of truth.
 
-They are currently treated as compatibility and implementation modules, not as the preferred long-term user-facing import path. New external integrations should prefer `doclingflow.*` imports.
+The `doclingflow` package is the preferred user-facing tool surface, while the
+root-level modules remain the active implementation modules during the staged
+migration. New external integrations should prefer package-level `doclingflow.*`
+imports rather than deep root-level imports.

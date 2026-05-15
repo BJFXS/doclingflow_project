@@ -16,6 +16,7 @@ from pipeline.strategy_selector import ProcessingStrategy
 from processors.image_handler import normalize_markdown_image_references, process_images
 from processors.markdown_cleaner import clean_markdown
 from processors.special_block_handler import post_process_special_blocks
+from processors.source_recovery import append_pdf_text_layer_recovery, recover_pptx_markdown
 from processors.structure_repair import repair_markdown_structure
 
 
@@ -55,6 +56,7 @@ def finalize_conversion_output(
         strategy=strategy,
         profile=profile,
         source_pages=source_pages,
+        source_path=doc_path,
         published_md_path=out_md_path,
     )
     sample_text_word_count, sample_text_coverage = calculate_sample_text_coverage(profile, artifacts.markdown_text)
@@ -93,6 +95,7 @@ def build_markdown_artifacts(
     strategy: ProcessingStrategy,
     profile: Any,
     source_pages: list[str],
+    source_path: Path | None = None,
     published_md_path: Path | None = None,
 ) -> MarkdownArtifacts:
     """Build final Markdown text, write the published file, and collect stats."""
@@ -104,6 +107,7 @@ def build_markdown_artifacts(
         strategy,
         profile,
         source_pages,
+        source_path,
     )
     if published_md_path is not None:
         published_md_path.parent.mkdir(parents=True, exist_ok=True)
@@ -238,6 +242,7 @@ def _build_final_markdown(
     strategy: ProcessingStrategy,
     profile: Any,
     source_pages: list[str],
+    source_path: Path | None,
 ) -> tuple[str, bool, int]:
     """Apply the repository's ordered Markdown post-processing stages."""
 
@@ -256,5 +261,9 @@ def _build_final_markdown(
         markdown = normalize_markdown_image_references(markdown, markdown_dir)
         appended_gallery_image_ref_count = 0
     markdown = clean_markdown(markdown)
+    if source_path is not None and source_path.suffix.lower() == ".pptx":
+        markdown = recover_pptx_markdown(markdown, source_path).markdown
     annotated_markdown, ocr_notice_inserted = annotate_scan_markdown(markdown, strategy, extracted_images, markdown_dir, source_pages)
+    if source_path is not None and source_path.suffix.lower() == ".pdf":
+        annotated_markdown = append_pdf_text_layer_recovery(annotated_markdown, source_path, source_pages, strategy).markdown
     return annotated_markdown, ocr_notice_inserted, appended_gallery_image_ref_count

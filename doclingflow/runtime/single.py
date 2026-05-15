@@ -6,11 +6,11 @@ from pathlib import Path
 
 from pipeline.result_collector import build_row
 from pipeline.task_executor import run_task
-from utils.io_utils import infer_document_record
-from utils.report_utils import ReportArtifacts, reserve_report_paths, write_csv, write_summary
+from utils.io_utils import infer_document_record, relocate_intermediate_markdown
+from utils.report_utils import ReportArtifacts, reserve_report_paths, write_report_bundle
 
 from doclingflow.models import ConversionResult
-from .services import apply_runtime_overrides, build_adapters, derive_single_output_path, inspect_document
+from .services import apply_runtime_overrides, build_adapters, derive_single_output_layout, inspect_document
 
 
 def run_single_conversion(
@@ -30,16 +30,16 @@ def run_single_conversion(
     """Convert one file using the repository pipeline and return a structured result."""
 
     src = Path(input_path).expanduser().resolve()
-    final_output_path = derive_single_output_path(
+    output_root, final_output_path = derive_single_output_layout(
         src,
         Path(output_path) if output_path is not None else None,
         Path(output_dir) if output_dir is not None else None,
     )
-    output_root = final_output_path.parent
     output_root.mkdir(parents=True, exist_ok=True)
-    log_root = output_root / ".doclingflow"
-    log_root.mkdir(parents=True, exist_ok=True)
-    artifacts = reserve_report_paths(log_root / "reports", log_root / "logs")
+    final_output_path.parent.mkdir(parents=True, exist_ok=True)
+    artifacts_root = output_root / "artifacts"
+    artifacts_root.mkdir(parents=True, exist_ok=True)
+    artifacts = reserve_report_paths(output_root / "reports", output_root / "logs")
 
     profile, strategy = inspect_document(src, settings)
     strategy = apply_runtime_overrides(
@@ -54,15 +54,13 @@ def run_single_conversion(
         disable_chunking=disable_chunking,
     )
     payload = run_task(src, final_output_path, build_adapters(), strategy, profile, settings, artifacts.log_path)
+    relocate_intermediate_markdown(final_output_path.parent / src.stem, artifacts_root / src.stem)
     row = build_row(src, infer_document_record(src, profile), payload, final_output_path, profile.page_count, strategy)
 
     summary = None
     report_paths: dict[str, Path] = {"log_path": artifacts.log_path}
     if emit_report:
-        write_csv([row], artifacts.csv_path)
-        summary = write_summary([row], artifacts.summary_path)
-        write_csv([row], artifacts.latest_csv_path)
-        write_summary([row], artifacts.latest_summary_path)
+        summary = write_report_bundle([row], artifacts)
         report_paths.update(
             {
                 "csv_path": artifacts.csv_path,

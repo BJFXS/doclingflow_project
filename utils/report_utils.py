@@ -40,6 +40,14 @@ def write_summary(rows: list[BenchmarkRow], summary_path: Path) -> BatchSummary:
     """Write and return the aggregate summary for the current batch rows."""
 
     summary_path.parent.mkdir(parents=True, exist_ok=True)
+    summary = build_summary(rows)
+    summary_path.write_text(json.dumps(asdict(summary), ensure_ascii=False, indent=2), encoding="utf-8")
+    return summary
+
+
+def build_summary(rows: list[BenchmarkRow]) -> BatchSummary:
+    """Build the in-memory batch summary without performing any file writes."""
+
     total_files = len(rows)
     success_files = sum(1 for row in rows if row.success)
     failed_files = total_files - success_files
@@ -48,7 +56,7 @@ def write_summary(rows: list[BenchmarkRow], summary_path: Path) -> BatchSummary:
     total_elapsed_sec = round(sum(row.elapsed_sec for row in rows), 4)
     avg_elapsed_sec = round(total_elapsed_sec / total_files, 4) if total_files else 0.0
     success_rate = round(success_files / total_files, 4) if total_files else 0.0
-    summary = BatchSummary(
+    return BatchSummary(
         total_files=total_files,
         success_files=success_files,
         failed_files=failed_files,
@@ -58,7 +66,15 @@ def write_summary(rows: list[BenchmarkRow], summary_path: Path) -> BatchSummary:
         avg_elapsed_sec=avg_elapsed_sec,
         total_elapsed_sec=total_elapsed_sec,
     )
-    summary_path.write_text(json.dumps(asdict(summary), ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_report_bundle(rows: list[BenchmarkRow], artifacts: ReportArtifacts) -> BatchSummary:
+    """Write the timestamped and rolling report files for one logical run."""
+
+    write_csv(rows, artifacts.csv_path)
+    summary = write_summary(rows, artifacts.summary_path)
+    write_csv(rows, artifacts.latest_csv_path)
+    write_summary(rows, artifacts.latest_summary_path)
     return summary
 
 

@@ -236,6 +236,7 @@ def merge_page_level_retry_payload(
         strategy=retry_strategy,
         profile=profile,
         source_pages=merged_pages,
+        source_path=doc_path,
         published_md_path=out_md_path,
     )
     merged_unreadable = looks_like_unreadable_text_layer(artifacts.markdown_text)
@@ -298,6 +299,7 @@ def rebuild_payload_from_source_pages(
         strategy=strategy,
         profile=profile,
         source_pages=source_pages,
+        source_path=doc_path,
         published_md_path=out_md_path,
     )
     sample_text_word_count, sample_text_coverage = calculate_sample_text_coverage(profile, artifacts.markdown_text)

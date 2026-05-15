@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from adapters import build_default_adapters
 from adapters.base_adapter import BaseAdapter
-from adapters.docling_adapter import DoclingAdapter
 from analyzers import analyze_file
 from benchmarks.benchmark_metrics import BenchmarkRow
 from config import Settings
@@ -16,11 +16,13 @@ from utils.io_utils import (
     collect_documents,
     ensure_dirs,
     infer_document_record,
+    make_intermediate_artifact_root,
     make_output_md_path,
+    relocate_intermediate_markdown,
     remove_related_outputs,
     remove_stale_output,
 )
-from utils.report_utils import ReportArtifacts, write_csv, write_summary
+from utils.report_utils import ReportArtifacts, write_report_bundle
 
 
 def run_batch(settings: Settings, artifacts: ReportArtifacts) -> tuple[list[BenchmarkRow], Path, Path]:
@@ -31,12 +33,15 @@ def run_batch(settings: Settings, artifacts: ReportArtifacts) -> tuple[list[Benc
     rows: list[BenchmarkRow] = []
     _write_reports(rows, artifacts)
 
-    adapters: list[BaseAdapter] = [DoclingAdapter()]
+    adapters: list[BaseAdapter] = build_default_adapters()
     for idx, doc_path in enumerate(docs, start=1):
         profile = analyze_file(doc_path)
         metadata = infer_document_record(doc_path, profile)
         strategy = select_strategy(profile, settings)
         out_md_path = make_output_md_path(settings, doc_path, str(metadata.get("doc_id", doc_path.stem)))
+        intermediate_root = make_intermediate_artifact_root(settings, doc_path)
+        # One logical document can leave multiple legacy artifacts behind, so
+        # clear sibling outputs before writing the next published Markdown file.
         remove_related_outputs(out_md_path.parent, doc_path, str(metadata.get("doc_type", "unknown")))
         remove_stale_output(out_md_path)
 
@@ -46,6 +51,7 @@ def run_batch(settings: Settings, artifacts: ReportArtifacts) -> tuple[list[Benc
             flush=True,
         )
         payload = run_task(doc_path, out_md_path, adapters, strategy, profile, settings, artifacts.log_path)
+        relocate_intermediate_markdown(out_md_path.parent / doc_path.stem, intermediate_root / doc_path.stem)
         effective_strategy = payload.get("effective_strategy", strategy)
         row = build_row(doc_path, metadata, payload, out_md_path, profile.page_count, effective_strategy)
         rows.append(row)
@@ -62,13 +68,10 @@ def run_batch(settings: Settings, artifacts: ReportArtifacts) -> tuple[list[Benc
 def build_adapters_from_settings(_: Settings) -> list[BaseAdapter]:
     """Return the adapter stack used for one batch run."""
 
-    return [DoclingAdapter()]
+    return build_default_adapters()
 
 
 def _write_reports(rows: list[BenchmarkRow], artifacts: ReportArtifacts) -> None:
     """Keep both timestamped and rolling report files in sync."""
 
-    write_csv(rows, artifacts.csv_path)
-    write_summary(rows, artifacts.summary_path)
-    write_csv(rows, artifacts.latest_csv_path)
-    write_summary(rows, artifacts.latest_summary_path)
+    write_report_bundle(rows, artifacts)

@@ -26,6 +26,8 @@ def convert_file(
 ) -> ConversionResult:
     """Convert one file and return a structured result."""
 
+    # Single-file callers usually think in terms of one published Markdown
+    # path, so derive the settings output root from that target when present.
     settings = load_settings(
         outputs_dir=Path(output_path).expanduser().resolve().parent if output_path is not None else output_dir,
         markdown_image_mode=image_mode,

@@ -242,7 +242,7 @@ def _build_chunk_plans(profile: FileProfile, runtime: RuntimeOptions, settings: 
     """Split a long PDF into inclusive page ranges with cloned runtime options."""
 
     total_pages = profile.page_count or 0
-    chunk_size = max(settings.chunk.min_chunk_size, settings.chunk.chunk_size)
+    chunk_size = _effective_chunk_size(profile, settings)
     plans: list[ChunkPlan] = []
     start = 1
     while start <= total_pages:
@@ -252,7 +252,7 @@ def _build_chunk_plans(profile: FileProfile, runtime: RuntimeOptions, settings: 
                 page_range=(start, end),
                 runtime_options=runtime,
                 content_type=profile.content_type,
-                memory_profile="conservative" if profile.content_type == "pdf_scan" else "standard",
+                memory_profile="conservative" if profile.content_type in {"pdf_scan", "pdf_image"} else "standard",
                 enable_ocr=runtime.do_ocr,
                 table_structure_enabled=runtime.do_table_structure,
                 force_backend_text=runtime.force_backend_text,
@@ -265,6 +265,17 @@ def _build_chunk_plans(profile: FileProfile, runtime: RuntimeOptions, settings: 
         )
         start = end + 1
     return plans
+
+
+def _effective_chunk_size(profile: FileProfile, settings: Settings) -> int:
+    """Choose a content-aware chunk size for long PDFs."""
+
+    base_chunk_size = max(settings.chunk.min_chunk_size, settings.chunk.chunk_size)
+    if profile.content_type == "pdf_scan":
+        return max(settings.chunk.min_chunk_size, min(base_chunk_size, 10))
+    if profile.content_type == "pdf_image":
+        return max(settings.chunk.min_chunk_size, min(base_chunk_size, 12))
+    return base_chunk_size
 
 
 def _strategy_timeout(content_type: str, is_long: bool, settings: Settings) -> float:

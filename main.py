@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from doclingflow.config import load_settings
 from doclingflow.runtime.batch import run_batch_conversion
-from utils.report_utils import reserve_report_paths, write_summary
+from utils.report_utils import reserve_report_paths
 import sys
 
 
@@ -49,8 +49,10 @@ def main() -> None:
         sys.stderr = _TeeStream(original_stderr, [log_file, latest_log_file])
         try:
             print(f"Run log: {artifacts.log_path}", flush=True)
-            result = run_batch_conversion(settings.test_docs_dir, settings.outputs_dir, settings=settings)
-            summary = write_summary(result.rows, result.summary_path)
+            # Reuse one reserved artifact bundle so the legacy entrypoint and
+            # the batch runtime write to the same numbered report/log targets.
+            result = run_batch_conversion(settings.test_docs_dir, settings.outputs_dir, settings=settings, artifacts=artifacts)
+            summary = result.summary
             if not result.rows:
                 print(f"No test documents found under: {settings.test_docs_dir}", flush=True)
                 return

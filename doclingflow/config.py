@@ -30,6 +30,7 @@ def load_settings(
         outputs_dir=outputs_path,
         markdown_dir=outputs_path / "markdown",
         images_dir=outputs_path / "images",
+        artifacts_dir=outputs_path / "artifacts",
         reports_dir=outputs_path / "reports",
         logs_dir=outputs_path / "logs",
         markdown_image_mode=markdown_image_mode or settings.markdown_image_mode,

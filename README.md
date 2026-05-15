@@ -191,6 +191,7 @@ By default, Docker runs write results under `outputs/`:
 - `outputs/reports/`
 - `outputs/logs/`
 
+<<<<<<< ours
 The published Markdown files under `outputs/markdown/` are the main user-facing outputs.
 
 In the current implementation:
@@ -199,6 +200,16 @@ In the current implementation:
 - image files referenced by that final Markdown are usually written under per-document `document_artifacts/` directories inside `outputs/markdown/`
 - intermediate `document.md` files and similar debugging artifacts are moved under `outputs/artifacts/`
 - `outputs/images/` is still part of the configured output layout, but many normal runs will leave it empty
+=======
+The published Markdown files under `outputs/markdown/` are the main user-facing outputs.
+
+In the current implementation:
+
+- final Markdown stays under `outputs/markdown/`
+- image files referenced by that final Markdown are usually written under per-document `document_artifacts/` directories inside `outputs/markdown/`
+- intermediate `document.md` files and similar debugging artifacts are moved under `outputs/artifacts/`
+- `outputs/images/` is still part of the configured output layout, but many normal runs will leave it empty
+>>>>>>> theirs
 
 ## Strategy Model
 
