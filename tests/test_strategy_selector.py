@@ -33,6 +33,40 @@ class StrategySelectorTests(unittest.TestCase):
         self.assertTrue(strategy.use_chunking)
         self.assertGreaterEqual(strategy.max_retries, 2)
 
+    def test_chunked_long_pdf_timeout_scales_with_chunk_count(self) -> None:
+        profile = FileProfile(
+            path=Path("very-long.pdf"),
+            suffix=".pdf",
+            size_bytes=200 * 1024 * 1024,
+            size_mb=200.0,
+            page_count=1200,
+            is_long_document=True,
+            family="pdf",
+            content_type="pdf_image",
+            is_image_heavy=True,
+        )
+        strategy = select_strategy(profile, load_settings())
+        self.assertTrue(strategy.use_chunking)
+        self.assertEqual(len(strategy.chunk_plans), 100)
+        self.assertEqual(strategy.timeout_sec, 9300.0)
+
+    def test_whole_long_pdf_keeps_fixed_timeout(self) -> None:
+        profile = FileProfile(
+            path=Path("two-column-long.pdf"),
+            suffix=".pdf",
+            size_bytes=30 * 1024 * 1024,
+            size_mb=30.0,
+            page_count=120,
+            is_long_document=True,
+            family="pdf",
+            content_type="pdf_two_column",
+            is_two_column=True,
+            can_chunk=False,
+        )
+        strategy = select_strategy(profile, load_settings())
+        self.assertFalse(strategy.use_chunking)
+        self.assertEqual(strategy.timeout_sec, 1800.0)
+
     def test_image_heavy_pdf_enables_ocr(self) -> None:
         profile = FileProfile(
             path=Path("scan.pdf"),

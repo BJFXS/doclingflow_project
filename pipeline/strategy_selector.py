@@ -116,14 +116,16 @@ def select_strategy(profile: FileProfile, settings: Settings) -> ProcessingStrat
             tags.append("chunked")
             chunk_plans = tuple(_build_chunk_plans(profile, runtime, settings))
             notes.append("long pdf can be chunked with page_range while preserving content-specific handling")
+            timeout_sec = _chunked_long_pdf_timeout(content_type, len(chunk_plans), settings)
         else:
             runtime = _widen_runtime_for_whole_long_pdf(runtime, content_type, settings)
             chunk_plans = ()
             notes.append("long pdf keeps full-document context and uses wider timeouts plus conservative batches")
+            timeout_sec = _strategy_timeout(content_type, True, settings)
         return ProcessingStrategy(
             mode="pdf_long",
             adapter_order=adapter_order,
-            timeout_sec=_strategy_timeout(content_type, True, settings),
+            timeout_sec=timeout_sec,
             max_retries=max(max_retries, 2),
             memory_limit_mb=memory_limit_mb,
             tags=tuple(tags),
@@ -273,6 +275,17 @@ def _strategy_timeout(content_type: str, is_long: bool, settings: Settings) -> f
     if is_long:
         return settings.long_pdf_timeout_sec
     return settings.pdf_timeout_sec
+
+
+def _chunked_long_pdf_timeout(content_type: str, chunk_count: int, settings: Settings) -> float:
+    """Scale chunked long-PDF timeout with chunk count while keeping a floor."""
+
+    base_timeout = _strategy_timeout(content_type, True, settings)
+    dynamic_timeout = (
+        chunk_count * settings.long_pdf_chunk_timeout_sec
+        + settings.long_pdf_chunk_timeout_buffer_sec
+    )
+    return max(base_timeout, dynamic_timeout)
 
 
 def _resolve_pdf_content_type(profile: FileProfile, settings: Settings) -> str:

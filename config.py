@@ -49,6 +49,8 @@ class Settings:
     default_memory_limit_mb: int
     pdf_timeout_sec: float
     long_pdf_timeout_sec: float
+    long_pdf_chunk_timeout_sec: float
+    long_pdf_chunk_timeout_buffer_sec: float
     scan_timeout_sec: float
     default_document_timeout_sec: float
     long_document_timeout_sec: float
@@ -82,6 +84,8 @@ def load_settings() -> Settings:
         default_memory_limit_mb=int(os.getenv("DEFAULT_MEMORY_LIMIT_MB", "12288")),
         pdf_timeout_sec=float(os.getenv("PDF_TIMEOUT_SEC", "900")),
         long_pdf_timeout_sec=float(os.getenv("LONG_PDF_TIMEOUT_SEC", "1800")),
+        long_pdf_chunk_timeout_sec=float(os.getenv("LONG_PDF_CHUNK_TIMEOUT_SEC", "90")),
+        long_pdf_chunk_timeout_buffer_sec=float(os.getenv("LONG_PDF_CHUNK_TIMEOUT_BUFFER_SEC", "300")),
         scan_timeout_sec=float(os.getenv("SCAN_TIMEOUT_SEC", "2400")),
         default_document_timeout_sec=float(os.getenv("DOCLING_DOCUMENT_TIMEOUT_SEC", "600")),
         long_document_timeout_sec=float(os.getenv("DOCLING_LONG_DOCUMENT_TIMEOUT_SEC", "1200")),
