@@ -1,10 +1,13 @@
 """Tests for the Docling adapter helper behavior."""
 
 from pathlib import Path
+import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
-from adapters.docling_adapter import _collect_images
+from adapters.docling_adapter import _apply_preferred_ocr_languages, _collect_images, _preferred_ocr_languages
+from analyzers.pdf_ocr_probe import _preferred_ocr_languages as _probe_preferred_ocr_languages
 
 
 class DoclingAdapterTests(unittest.TestCase):
@@ -25,6 +28,24 @@ class DoclingAdapterTests(unittest.TestCase):
             images = _collect_images(root / "chunk_002")
 
         self.assertEqual(images, [image_2])
+
+    def test_preferred_ocr_languages_default_to_chinese_and_english(self) -> None:
+        with patch.dict(os.environ, {}, clear=False):
+            self.assertEqual(_preferred_ocr_languages(), ["chi_sim", "eng"])
+            self.assertEqual(_probe_preferred_ocr_languages(), ["chi_sim", "eng"])
+
+    def test_preferred_ocr_languages_honor_environment_override(self) -> None:
+        with patch.dict(os.environ, {"TESSERACT_OCR_LANGS": "eng,chi_sim"}, clear=False):
+            self.assertEqual(_preferred_ocr_languages(), ["eng", "chi_sim"])
+            self.assertEqual(_probe_preferred_ocr_languages(), ["eng", "chi_sim"])
+
+    def test_apply_preferred_ocr_languages_sets_lang_when_supported(self) -> None:
+        class FakeOcrOption:
+            lang: list[str] | None = None
+
+        option = FakeOcrOption()
+        _apply_preferred_ocr_languages(option)
+        self.assertEqual(option.lang, ["chi_sim", "eng"])
 
 
 if __name__ == "__main__":

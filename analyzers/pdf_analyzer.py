@@ -9,6 +9,8 @@ from pathlib import Path
 
 from pypdf import PdfReader
 
+from .pdf_ocr_probe import OcrProbeResult, run_pdf_ocr_probe
+
 
 SCAN_KEYWORDS = (
     "scanned by",
@@ -16,6 +18,8 @@ SCAN_KEYWORDS = (
     "scanned copy",
     "optical character recognition",
 )
+
+ALPHA_WORD_RE = re.compile(r"[A-Za-zÀ-ÿ]{3,}")
 
 CHART_KEYWORDS = (
     "revenue",
@@ -47,6 +51,11 @@ class PdfProfile:
     content_type: str
     sample_text: str
     layout_notes: tuple[str, ...]
+    ocr_probe_attempted: bool = False
+    ocr_probe_readable: bool = False
+    ocr_probe_reason: str = ""
+    ocr_probe_pages: tuple[int, ...] = ()
+    ocr_probe_score: float = 0.0
 
 
 def _count_pdf_pages(data: bytes) -> int | None:
@@ -87,12 +96,36 @@ def analyze_pdf(path: Path) -> PdfProfile:
 
     is_two_column = _detect_two_column(lines)
     is_chart_heavy = _detect_chart_heavy(lines, image_objects, text_objects)
-    is_scan_like = _detect_scan_like(text, text_char_count, image_ratio, image_objects, text_objects, page_count)
+    static_scan_like = _detect_scan_like(text, text_char_count, image_ratio, image_objects, text_objects, page_count)
     is_image_heavy = _detect_image_heavy(text_char_count, image_ratio, image_objects, text_objects, page_count)
     is_long_document = (page_count or 0) >= 40 or size_mb >= 20
     can_chunk = not is_two_column
-    content_type = _classify_pdf_content_type(is_two_column, is_scan_like, is_image_heavy)
-    layout_notes = _build_layout_notes(is_two_column, is_scan_like, is_image_heavy, is_chart_heavy, can_chunk)
+    ocr_probe = _maybe_probe_scan_candidate(
+        path=path,
+        is_two_column=is_two_column,
+        page_count=page_count,
+        image_ratio=image_ratio,
+        image_objects=image_objects,
+        text_objects=text_objects,
+        text_char_count=text_char_count,
+        sample_text=text,
+        is_image_heavy=is_image_heavy,
+    )
+    content_type = _classify_pdf_content_type(
+        is_two_column=is_two_column,
+        static_scan_like=static_scan_like,
+        is_image_heavy=is_image_heavy,
+        ocr_probe=ocr_probe,
+    )
+    is_scan_like = static_scan_like or ocr_probe.is_readable
+    layout_notes = _build_layout_notes(
+        is_two_column,
+        is_scan_like,
+        is_image_heavy,
+        is_chart_heavy,
+        can_chunk,
+        ocr_probe,
+    )
 
     return PdfProfile(
         page_count=page_count,
@@ -109,6 +142,11 @@ def analyze_pdf(path: Path) -> PdfProfile:
         content_type=content_type,
         sample_text=text,
         layout_notes=layout_notes,
+        ocr_probe_attempted=ocr_probe.attempted,
+        ocr_probe_readable=ocr_probe.is_readable,
+        ocr_probe_reason=ocr_probe.reason,
+        ocr_probe_pages=ocr_probe.page_numbers,
+        ocr_probe_score=ocr_probe.readable_score,
     )
 
 
@@ -245,12 +283,19 @@ def _detect_scan_like(
     return text_char_count == 0 and image_ratio >= 0.5 and image_objects >= 2
 
 
-def _classify_pdf_content_type(is_two_column: bool, is_scan_like: bool, is_image_heavy: bool) -> str:
+def _classify_pdf_content_type(
+    is_two_column: bool,
+    static_scan_like: bool,
+    is_image_heavy: bool,
+    ocr_probe: OcrProbeResult,
+) -> str:
     """Collapse PDF layout signals into the repository's content type labels."""
 
     if is_two_column:
         return "pdf_two_column"
-    if is_scan_like:
+    if ocr_probe.is_readable:
+        return "pdf_scan"
+    if static_scan_like and not ocr_probe.attempted:
         return "pdf_scan"
     if is_image_heavy:
         return "pdf_image"
@@ -263,18 +308,123 @@ def _build_layout_notes(
     is_image_heavy: bool,
     is_chart_heavy: bool,
     can_chunk: bool,
+    ocr_probe: OcrProbeResult,
 ) -> tuple[str, ...]:
     """Attach human-readable routing notes for logs and benchmark reports."""
 
     notes: list[str] = []
     if is_two_column:
         notes.append("two-column ordering needs dedicated post-processing")
-    if is_scan_like:
+    if ocr_probe.is_readable:
+        notes.append("ocr probe recovered readable body text; route as scan")
+    elif is_scan_like:
         notes.append("ocr should prefer full-page recovery")
     elif is_image_heavy:
         notes.append("preserve pictures with markdown references")
+    if ocr_probe.attempted and not ocr_probe.is_readable and ocr_probe.reason:
+        notes.append(f"ocr probe did not confirm scan: {ocr_probe.reason}")
     if is_chart_heavy:
         notes.append("chart extraction should stay opt-in")
     if not can_chunk:
         notes.append("keep whole-document context instead of chunking")
     return tuple(notes)
+
+
+def _maybe_probe_scan_candidate(
+    path: Path,
+    is_two_column: bool,
+    page_count: int | None,
+    image_ratio: float,
+    image_objects: int,
+    text_objects: int,
+    text_char_count: int,
+    sample_text: str,
+    is_image_heavy: bool,
+) -> OcrProbeResult:
+    """Run a small OCR probe only for PDFs that look image-dominant or text-poor."""
+
+    if not _should_run_ocr_probe(
+        is_two_column=is_two_column,
+        page_count=page_count,
+        image_ratio=image_ratio,
+        image_objects=image_objects,
+        text_objects=text_objects,
+        text_char_count=text_char_count,
+        sample_text=sample_text,
+        is_image_heavy=is_image_heavy,
+    ):
+        return OcrProbeResult(
+            attempted=False,
+            page_numbers=(),
+            ocr_text="",
+            ocr_char_count=0,
+            ocr_line_count=0,
+            readable_score=0.0,
+            is_readable=False,
+            reason="ocr probe not needed",
+        )
+    return run_pdf_ocr_probe(path, _select_probe_pages(page_count))
+
+
+def _should_run_ocr_probe(
+    is_two_column: bool,
+    page_count: int | None,
+    image_ratio: float,
+    image_objects: int,
+    text_objects: int,
+    text_char_count: int,
+    sample_text: str,
+    is_image_heavy: bool,
+) -> bool:
+    """Limit OCR probing to PDFs that look image-heavy or text-abnormal."""
+
+    if is_two_column or not page_count or page_count < 1:
+        return False
+    has_readable_sample_text = bool(sample_text.strip()) and not _looks_like_unreadable_sample_text(sample_text)
+    if has_readable_sample_text and text_char_count >= max(400, page_count * 80):
+        return False
+    if is_image_heavy:
+        return True
+    if image_ratio >= 0.45:
+        return True
+    if image_objects >= max(3, page_count // 2):
+        return True
+    if text_char_count < max(80, page_count * 40):
+        return True
+    if not sample_text.strip():
+        return True
+    if _looks_like_unreadable_sample_text(sample_text):
+        return True
+    return text_objects <= max(2, page_count // 2) and image_objects >= max(2, page_count // 2)
+
+
+def _select_probe_pages(page_count: int | None) -> tuple[int, ...]:
+    """Select a small number of front pages for OCR probing."""
+
+    if not page_count or page_count <= 0:
+        return ()
+    if page_count <= 3:
+        return tuple(range(1, page_count + 1))
+    if page_count <= 10:
+        return (1, 2, 3)
+    return (1, 2, 3, 5)
+
+
+def _looks_like_unreadable_sample_text(text: str) -> bool:
+    """Use a lightweight local heuristic without depending on pipeline modules."""
+
+    if not text:
+        return False
+    words = ALPHA_WORD_RE.findall(text)
+    if len(words) < 40:
+        return False
+    long_words = [word for word in words if len(word) >= 5]
+    if len(long_words) < 25:
+        return False
+    uppercase_ratio = sum(1 for word in long_words if word.isupper()) / len(long_words)
+    suspicious_ratio = sum(
+        1
+        for word in long_words
+        if word.isupper() or (len(word) >= 7 and sum(ch.lower() in "aeiou" for ch in word) <= 1)
+    ) / len(long_words)
+    return uppercase_ratio >= 0.35 or suspicious_ratio >= 0.45

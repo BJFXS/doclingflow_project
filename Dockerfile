@@ -28,6 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libreoffice \
     poppler-utils \
     tesseract-ocr \
+    tesseract-ocr-chi-sim \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
