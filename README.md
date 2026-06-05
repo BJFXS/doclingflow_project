@@ -2,6 +2,16 @@
 
 `doclingflow_project` is a document-to-Markdown tool built on top of [Docling](https://github.com/docling-project/docling).
 
+Its goal is to convert common document types such as `pdf`, `pptx`, `docx`, `xlsx`, and `html` into Markdown that is easier to use in LLM workflows such as RAG, indexing, review, and downstream automation.
+
+This project is not a new parser from scratch. It is a Docling-based conversion layer that makes document conversion easier to run end to end:
+
+- one Docker-first workflow
+- one CLI for common document types
+- strategy-aware PDF routing
+- scan-aware OCR handling, including Chinese scan OCR support
+- Markdown, logs, and batch reports in one run
+
 ## Run It In Docker
 
 This project should be run in Docker.
@@ -17,11 +27,40 @@ You can try to run parts of it without Docker, but that is not the recommended w
 
 If you want the most stable behavior and the lowest setup risk, use Docker.
 
-Its goal is not just to convert files quickly. The project is optimized for a stricter target:
+The project is optimized for a stricter target than simple one-off conversion:
 
 - convert common document formats into Markdown for LLM workflows
 - preserve as much source information as possible
 - apply strategy-aware handling for difficult PDFs instead of treating all files the same
+
+## Why Docling
+
+This project uses Docling as its base because Docling is a strong foundation for the kind of workflow this repository is trying to provide:
+
+- one conversion base across common office and web document types
+- strong PDF-to-Markdown structure extraction compared with lighter Markdown-only tools
+- built-in OCR and pipeline options that can be extended with project-specific routing
+- a good fit for Dockerized batch workflows instead of ad hoc local-only conversion
+
+This is not a claim that other converters are bad. It is a statement about fit for this repository's goals.
+
+Compared with `MarkItDown`, Docling is a better base when the priority is not just quick Markdown output, but also PDF structure retention, OCR integration, and room for strategy-aware routing.
+
+Compared with `MinerU`, the current project direction favors a single Docling-based workflow that is easier to package, test, and run through one Docker path. MinerU remains a relevant reference point, but it is not the base chosen for this repository today.
+
+## Why Use This Project Instead Of Plain Docling
+
+If you only need to convert a simple file once and you are already comfortable setting up Docling yourself, plain Docling may be enough.
+
+This repository exists for the cases where users want a more complete and easier-to-run workflow:
+
+- one Docker-first path instead of manual local environment setup
+- one entry point for common document types instead of separate ad hoc commands
+- PDF strategy routing for `plain`, `image-heavy`, `scan-heavy`, `two-column`, and `long` PDFs
+- scan-aware OCR handling with Chinese scan OCR support
+- batch logs and CSV / JSON reports so bad results are visible instead of silent
+
+In short, Docling provides the core conversion engine. This project packages that engine into a more opinionated workflow so users do not need to keep tuning environment details, OCR setup, or PDF handling by hand.
 
 ## What It Is
 
@@ -47,8 +86,9 @@ The project adds:
 
 - file-type and PDF layout analysis
 - strategy-aware routing
+- PDF route selection for `plain`, `image-heavy`, `scan-heavy`, `two-column`, and `long` PDFs
 - long PDF chunking
-- scan-aware OCR handling
+- scan-aware OCR handling with Chinese OCR support
 - Markdown structure repair
 - image reference normalization
 - CSV / JSON batch reports
@@ -191,7 +231,6 @@ By default, Docker runs write results under `outputs/`:
 - `outputs/reports/`
 - `outputs/logs/`
 
-<<<<<<< ours
 The published Markdown files under `outputs/markdown/` are the main user-facing outputs.
 
 In the current implementation:
@@ -200,20 +239,12 @@ In the current implementation:
 - image files referenced by that final Markdown are usually written under per-document `document_artifacts/` directories inside `outputs/markdown/`
 - intermediate `document.md` files and similar debugging artifacts are moved under `outputs/artifacts/`
 - `outputs/images/` is still part of the configured output layout, but many normal runs will leave it empty
-=======
-The published Markdown files under `outputs/markdown/` are the main user-facing outputs.
-
-In the current implementation:
-
-- final Markdown stays under `outputs/markdown/`
-- image files referenced by that final Markdown are usually written under per-document `document_artifacts/` directories inside `outputs/markdown/`
-- intermediate `document.md` files and similar debugging artifacts are moved under `outputs/artifacts/`
-- `outputs/images/` is still part of the configured output layout, but many normal runs will leave it empty
->>>>>>> theirs
 
 ## Strategy Model
 
 The pipeline does not treat every document the same.
+
+It first analyzes the input and then chooses a route instead of sending every PDF through the same settings.
 
 It distinguishes at least these major routes:
 
@@ -223,6 +254,8 @@ It distinguishes at least these major routes:
 - image-heavy PDF conversion
 - two-column PDF conversion
 - long PDF conversion with chunking when safe
+
+The scan route now supports Chinese OCR in the Docker workflow, which matters for scanned Chinese PDFs that would otherwise degrade into low-quality text output.
 
 Key modules:
 
@@ -269,7 +302,7 @@ Important variables include:
 
 ## Package Direction
 
-The repository is in the middle of a toolization transition.
+The repository already has a working toolized path for normal use.
 
 What is already in place:
 
@@ -278,12 +311,24 @@ What is already in place:
 - CLI subcommands
 - Docker-only validation scripts
 - installability check inside Docker
+- Dockerized OCR support for scan-heavy PDFs, including Chinese scan OCR support
 
 What still needs continued work:
 
 - deeper internal implementation migration if the project later wants a stricter package-only layout
 - actual publication to PyPI and a public Docker registry
 - more targeted optimization of the image-heavy PDF path without sacrificing fidelity
+
+## Best Fit
+
+This project is a good fit when you want to:
+
+- convert common documents into Markdown for LLM workflows
+- avoid hand-fixing OCR dependencies and local runtime drift
+- batch process real-world PDFs instead of only simple clean files
+- keep logs and reports for conversion review
+
+It is less important when you only want to run a one-off conversion on a simple file and are already comfortable using plain Docling directly.
 
 ## Documentation
 
@@ -304,4 +349,4 @@ This project should be understood as:
 
 **a Docling-based high-fidelity Markdown converter**
 
-It is not meant to replace the core Docling project. It is meant to provide a stricter, more conservative conversion workflow for users who care about preserving document information for downstream LLM use.
+It is not meant to replace the core Docling project. It is meant to provide a stricter, Docker-first, easier-to-run conversion workflow for users who want common document types converted to Markdown for downstream LLM use without hand-managing OCR setup, environment details, and PDF routing logic.
