@@ -192,10 +192,9 @@ def _build_pdf_runtime_options(profile: FileProfile, content_type: str, settings
             markdown_image_mode=settings.markdown_image_mode,
         )
     if content_type == "pdf_image":
-        enable_ocr = bool(profile.is_scan_like and (profile.page_count or 0) > 0)
         return RuntimeOptions(
             document_timeout=settings.long_document_timeout_sec,
-            do_ocr=enable_ocr,
+            do_ocr=False,
             do_table_structure=True,
             generate_picture_images=True,
             images_scale=1.25,
@@ -313,8 +312,8 @@ def _resolve_pdf_content_type(profile: FileProfile, settings: Settings) -> str:
         return "pdf_scan"
     if scan_mode == "disable_scan":
         return "pdf_image" if profile.is_image_heavy else "pdf_plain"
-    if profile.is_scan_like:
-        return "pdf_scan"
     if profile.is_image_heavy:
         return "pdf_image"
+    if profile.is_scan_like:
+        return "pdf_scan"
     return "pdf_plain"

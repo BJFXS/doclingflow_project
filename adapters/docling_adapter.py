@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import inspect
+import os
 import time
 from typing import Any
 
@@ -192,8 +193,27 @@ def _build_ocr_options(docling: dict[str, Any], runtime_options: object) -> Any 
             option = option_cls()
             if getattr(runtime_options, "force_full_page_ocr", False) and hasattr(option, "force_full_page_ocr"):
                 setattr(option, "force_full_page_ocr", True)
+            _apply_preferred_ocr_languages(option)
             return option
     return None
+
+
+def _apply_preferred_ocr_languages(option: Any) -> None:
+    """Apply configured OCR languages to backends that expose a lang field."""
+
+    if not hasattr(option, "lang"):
+        return
+    languages = _preferred_ocr_languages()
+    if languages:
+        setattr(option, "lang", languages)
+
+
+def _preferred_ocr_languages() -> list[str]:
+    """Resolve OCR languages from environment with a Chinese-first default."""
+
+    configured = os.getenv("TESSERACT_OCR_LANGS", "chi_sim,eng")
+    languages = [part.strip() for part in configured.split(",") if part.strip()]
+    return languages
 
 
 def _convert_single(

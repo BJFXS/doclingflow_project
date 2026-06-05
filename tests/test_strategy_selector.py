@@ -67,17 +67,19 @@ class StrategySelectorTests(unittest.TestCase):
         self.assertFalse(strategy.use_chunking)
         self.assertEqual(strategy.timeout_sec, 1800.0)
 
-    def test_image_heavy_pdf_enables_ocr(self) -> None:
+    def test_image_heavy_pdf_does_not_enable_ocr_without_scan_route(self) -> None:
         profile = FileProfile(
             path=Path("scan.pdf"),
             suffix=".pdf",
             size_bytes=1024,
             size_mb=0.1,
             is_image_heavy=True,
+            content_type="pdf_image",
+            family="pdf",
             is_scan_like=True,
         )
         strategy = select_strategy(profile, load_settings())
-        self.assertTrue(strategy.enable_ocr)
+        self.assertFalse(strategy.enable_ocr)
         self.assertEqual(strategy.adapter_order, ["docling"])
 
     def test_pdf_image_defaults_to_preserve_assets_without_ocr(self) -> None:

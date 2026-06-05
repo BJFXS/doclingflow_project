@@ -11,4 +11,6 @@ outputs/representative_input/
 outputs/representative_output/
 outputs/heavy_pdf_input/
 outputs/heavy_pdf_output/
+outputs/
+note.txt
 tmp/
