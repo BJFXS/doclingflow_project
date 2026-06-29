@@ -111,13 +111,15 @@ def analyze_pdf(path: Path) -> PdfProfile:
         sample_text=text,
         is_image_heavy=is_image_heavy,
     )
+    probe_confirms_scan = _probe_confirms_scan(sample_text=text, ocr_probe=ocr_probe)
     content_type = _classify_pdf_content_type(
         is_two_column=is_two_column,
         static_scan_like=static_scan_like,
         is_image_heavy=is_image_heavy,
         ocr_probe=ocr_probe,
+        probe_confirms_scan=probe_confirms_scan,
     )
-    is_scan_like = static_scan_like or ocr_probe.is_readable
+    is_scan_like = static_scan_like or probe_confirms_scan
     layout_notes = _build_layout_notes(
         is_two_column,
         is_scan_like,
@@ -125,6 +127,7 @@ def analyze_pdf(path: Path) -> PdfProfile:
         is_chart_heavy,
         can_chunk,
         ocr_probe,
+        probe_confirms_scan,
     )
 
     return PdfProfile(
@@ -288,12 +291,13 @@ def _classify_pdf_content_type(
     static_scan_like: bool,
     is_image_heavy: bool,
     ocr_probe: OcrProbeResult,
+    probe_confirms_scan: bool,
 ) -> str:
     """Collapse PDF layout signals into the repository's content type labels."""
 
     if is_two_column:
         return "pdf_two_column"
-    if ocr_probe.is_readable:
+    if probe_confirms_scan:
         return "pdf_scan"
     if static_scan_like and not ocr_probe.attempted:
         return "pdf_scan"
@@ -309,14 +313,15 @@ def _build_layout_notes(
     is_chart_heavy: bool,
     can_chunk: bool,
     ocr_probe: OcrProbeResult,
+    probe_confirms_scan: bool,
 ) -> tuple[str, ...]:
     """Attach human-readable routing notes for logs and benchmark reports."""
 
     notes: list[str] = []
     if is_two_column:
         notes.append("two-column ordering needs dedicated post-processing")
-    if ocr_probe.is_readable:
-        notes.append("ocr probe recovered readable body text; route as scan")
+    if probe_confirms_scan:
+        notes.append("ocr probe materially exceeded text-layer sample; route as scan")
     elif is_scan_like:
         notes.append("ocr should prefer full-page recovery")
     elif is_image_heavy:
@@ -328,6 +333,26 @@ def _build_layout_notes(
     if not can_chunk:
         notes.append("keep whole-document context instead of chunking")
     return tuple(notes)
+
+
+def _probe_confirms_scan(sample_text: str, ocr_probe: OcrProbeResult) -> bool:
+    """Treat OCR as scan evidence only when it materially beats the text layer."""
+
+    if not ocr_probe.is_readable:
+        return False
+
+    sample_char_count = len(re.sub(r"\s+", "", sample_text))
+    if sample_char_count == 0:
+        return True
+    if _looks_like_unreadable_sample_text(sample_text):
+        return True
+
+    ocr_char_count = ocr_probe.ocr_char_count
+    materially_larger = (
+        ocr_char_count >= max(sample_char_count * 1.8, sample_char_count + 180)
+        and (ocr_char_count - sample_char_count) >= 180
+    )
+    return materially_larger
 
 
 def _maybe_probe_scan_candidate(

@@ -121,7 +121,7 @@ class AnalyzerTests(unittest.TestCase):
 
         self.assertTrue(profile.is_scan_like)
 
-    def test_pdf_analyzer_uses_readable_ocr_probe_to_force_scan_route(self) -> None:
+    def test_pdf_analyzer_uses_readable_ocr_probe_to_force_scan_route_when_ocr_materially_beats_text_layer(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "scan_candidate.pdf"
             writer = PdfWriter()
@@ -130,14 +130,14 @@ class AnalyzerTests(unittest.TestCase):
             with path.open("wb") as fh:
                 writer.write(fh)
 
-            with patch("analyzers.pdf_analyzer._extract_pdf_text_sample", return_value=""):
+            with patch("analyzers.pdf_analyzer._extract_pdf_text_sample", return_value="SAMPLE"):
                 with patch(
                     "analyzers.pdf_analyzer.run_pdf_ocr_probe",
                     return_value=OcrProbeResult(
                         attempted=True,
                         page_numbers=(1, 2, 3),
-                        ocr_text="这是一个可读的扫描件正文段落。" * 10,
-                        ocr_char_count=180,
+                        ocr_text="这是一个可读的扫描件正文段落。" * 14,
+                        ocr_char_count=252,
                         ocr_line_count=6,
                         readable_score=0.92,
                         is_readable=True,
@@ -148,6 +148,37 @@ class AnalyzerTests(unittest.TestCase):
 
         self.assertEqual(profile.content_type, "pdf_scan")
         self.assertTrue(profile.is_scan_like)
+        self.assertTrue(profile.pdf_profile.ocr_probe_attempted)
+        self.assertTrue(profile.pdf_profile.ocr_probe_readable)
+
+    def test_pdf_analyzer_does_not_force_scan_when_text_layer_is_already_substantial(self) -> None:
+        sample_text = "这是一个可直接抽取的数字原生审计报告正文。" * 60
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "digital_report.pdf"
+            writer = PdfWriter()
+            for _ in range(80):
+                writer.add_blank_page(width=200, height=200)
+            with path.open("wb") as fh:
+                writer.write(fh)
+
+            with patch("analyzers.pdf_analyzer._extract_pdf_text_sample", return_value=sample_text):
+                with patch(
+                    "analyzers.pdf_analyzer.run_pdf_ocr_probe",
+                    return_value=OcrProbeResult(
+                        attempted=True,
+                        page_numbers=(1, 2, 3, 5),
+                        ocr_text="这是一个可读的 OCR 版本正文。" * 50,
+                        ocr_char_count=len("这是一个可读的 OCR 版本正文。" * 50),
+                        ocr_line_count=8,
+                        readable_score=0.94,
+                        is_readable=True,
+                        reason="ocr probe recovered readable body text",
+                    ),
+                ):
+                    profile = analyze_file(path)
+
+        self.assertEqual(profile.content_type, "pdf_plain")
+        self.assertFalse(profile.is_scan_like)
         self.assertTrue(profile.pdf_profile.ocr_probe_attempted)
         self.assertTrue(profile.pdf_profile.ocr_probe_readable)
 
