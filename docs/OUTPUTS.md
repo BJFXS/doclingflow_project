@@ -4,21 +4,30 @@ By default, conversion runs write artifacts under `outputs/`.
 
 ## Main Directories
 
-- `outputs/markdown/`
-- `outputs/images/`
+- `outputs/*.md`
+- `outputs/*.assets/`
 - `outputs/artifacts/`
 - `outputs/reports/`
 - `outputs/logs/`
 
 ## Markdown Output
 
-The published Markdown files under `outputs/markdown/` are the main user-facing results.
+The published Markdown files directly under `outputs/` are the main user-facing results.
+
+Each published Markdown file can have a sibling asset directory:
+
+- `outputs/report_001.md`
+- `outputs/report_001.assets/`
+
+Image references in the published Markdown are rewritten to point into that sibling asset directory, so collecting final deliverables does not require drilling into per-document working folders.
 
 The repository keeps intermediate artifacts for debugging and inspection under `outputs/artifacts/`, including:
 
 - per-document working directories
 - chunk directories for long PDFs
 - intermediate `document.md` files
+
+The repository may also use `outputs/markdown/` as an internal staging area while building the final published Markdown.
 
 ## Reports
 

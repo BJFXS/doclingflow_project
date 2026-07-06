@@ -18,6 +18,8 @@ from utils.io_utils import (
     infer_document_record,
     make_intermediate_artifact_root,
     make_output_md_path,
+    make_published_md_path,
+    publish_markdown_bundle,
     relocate_intermediate_markdown,
     remove_related_outputs,
     remove_stale_output,
@@ -38,12 +40,15 @@ def run_batch(settings: Settings, artifacts: ReportArtifacts) -> tuple[list[Benc
         profile = analyze_file(doc_path)
         metadata = infer_document_record(doc_path, profile)
         strategy = select_strategy(profile, settings)
-        out_md_path = make_output_md_path(settings, doc_path, str(metadata.get("doc_id", doc_path.stem)))
+        doc_id = str(metadata.get("doc_id", doc_path.stem))
+        out_md_path = make_output_md_path(settings, doc_path, doc_id)
+        published_md_path = make_published_md_path(settings, doc_id)
         intermediate_root = make_intermediate_artifact_root(settings, doc_path)
         # One logical document can leave multiple legacy artifacts behind, so
         # clear sibling outputs before writing the next published Markdown file.
-        remove_related_outputs(out_md_path.parent, doc_path, str(metadata.get("doc_type", "unknown")))
+        remove_related_outputs(settings.outputs_dir, doc_path, str(metadata.get("doc_type", "unknown")))
         remove_stale_output(out_md_path)
+        remove_stale_output(published_md_path)
 
         print(
             f"[{idx}/{len(docs)}] Converting: {doc_path} "
@@ -52,8 +57,10 @@ def run_batch(settings: Settings, artifacts: ReportArtifacts) -> tuple[list[Benc
         )
         payload = run_task(doc_path, out_md_path, adapters, strategy, profile, settings, artifacts.log_path)
         relocate_intermediate_markdown(out_md_path.parent / doc_path.stem, intermediate_root / doc_path.stem)
+        if payload.get("success") and out_md_path.exists():
+            payload["published_md_path"] = str(publish_markdown_bundle(out_md_path, published_md_path))
         effective_strategy = payload.get("effective_strategy", strategy)
-        row = build_row(doc_path, metadata, payload, out_md_path, profile.page_count, effective_strategy)
+        row = build_row(doc_path, metadata, payload, published_md_path, profile.page_count, effective_strategy)
         rows.append(row)
         _write_reports(rows, artifacts)
         print(

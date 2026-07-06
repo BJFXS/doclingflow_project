@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pipeline.result_collector import build_row
 from pipeline.task_executor import run_task
-from utils.io_utils import infer_document_record, relocate_intermediate_markdown
+from utils.io_utils import infer_document_record, publish_markdown_bundle, relocate_intermediate_markdown
 from utils.report_utils import ReportArtifacts, reserve_report_paths, write_report_bundle
 
 from doclingflow.models import ConversionResult
@@ -30,6 +30,7 @@ def run_single_conversion(
     """Convert one file using the repository pipeline and return a structured result."""
 
     src = Path(input_path).expanduser().resolve()
+    explicit_output_path = output_path is not None
     output_root, final_output_path = derive_single_output_layout(
         src,
         Path(output_path) if output_path is not None else None,
@@ -55,7 +56,11 @@ def run_single_conversion(
     )
     payload = run_task(src, final_output_path, build_adapters(), strategy, profile, settings, artifacts.log_path)
     relocate_intermediate_markdown(final_output_path.parent / src.stem, artifacts_root / src.stem)
-    row = build_row(src, infer_document_record(src, profile), payload, final_output_path, profile.page_count, strategy)
+    published_output_path = final_output_path
+    if not explicit_output_path and payload.get("success") and final_output_path.exists():
+        published_output_path = output_root / f"{src.stem}.md"
+        payload["published_md_path"] = str(publish_markdown_bundle(final_output_path, published_output_path))
+    row = build_row(src, infer_document_record(src, profile), payload, published_output_path, profile.page_count, strategy)
 
     summary = None
     report_paths: dict[str, Path] = {"log_path": artifacts.log_path}
@@ -72,7 +77,7 @@ def run_single_conversion(
 
     return ConversionResult(
         input_path=src,
-        output_path=final_output_path,
+        output_path=published_output_path,
         payload=payload,
         strategy=strategy,
         profile=profile,

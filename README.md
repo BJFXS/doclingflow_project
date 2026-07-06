@@ -225,19 +225,20 @@ This script builds a fresh wheel in Docker and then installs that built artifact
 
 By default, Docker runs write results under `outputs/`:
 
-- `outputs/markdown/`
-- `outputs/images/`
+- `outputs/*.md`
+- `outputs/*.assets/`
 - `outputs/artifacts/`
 - `outputs/reports/`
 - `outputs/logs/`
 
-The published Markdown files under `outputs/markdown/` are the main user-facing outputs.
+The published Markdown files directly under `outputs/` are the main user-facing outputs.
 
 In the current implementation:
 
-- final Markdown stays under `outputs/markdown/`
-- image files referenced by that final Markdown are usually written under per-document `document_artifacts/` directories inside `outputs/markdown/`
+- final Markdown is published as `outputs/<doc_id>.md`
+- image files referenced by that final Markdown are copied into a sibling `outputs/<doc_id>.assets/` directory
 - intermediate `document.md` files and similar debugging artifacts are moved under `outputs/artifacts/`
+- `outputs/markdown/` remains an internal staging area for adapter output and link normalization
 - `outputs/images/` is still part of the configured output layout, but many normal runs will leave it empty
 
 ## Strategy Model

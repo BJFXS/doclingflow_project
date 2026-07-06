@@ -3,9 +3,14 @@ from __future__ import annotations
 """Filesystem and naming helpers for batch conversion runs."""
 
 from pathlib import Path
+import re
+import shutil
 
 from config import Settings
 from document_types import classify_document_content_type, is_supported_document_suffix
+
+
+IMAGE_REF_RE = re.compile(r"!\[(.*?)\]\((.*?)\)")
 
 
 def ensure_dirs(settings: Settings) -> None:
@@ -40,12 +45,24 @@ def infer_document_record(doc_path: Path, profile: object | None = None) -> dict
 
 
 def make_output_md_path(settings: Settings, doc_path: Path, doc_id: str) -> Path:
-    """Mirror the input directory structure under the Markdown output root."""
+    """Mirror the input directory structure under the staging Markdown root."""
 
     relative_parent = doc_path.parent.relative_to(settings.test_docs_dir)
     out_dir = settings.markdown_dir / relative_parent
     out_dir.mkdir(parents=True, exist_ok=True)
     return out_dir / f"{doc_id}.md"
+
+
+def make_published_md_path(settings: Settings, doc_id: str) -> Path:
+    """Return the user-facing published Markdown path under the output root."""
+
+    return settings.outputs_dir / f"{doc_id}.md"
+
+
+def make_published_assets_dir(published_md_path: Path) -> Path:
+    """Return the sibling asset directory for one published Markdown file."""
+
+    return published_md_path.with_suffix(".assets")
 
 
 def make_intermediate_artifact_root(settings: Settings, doc_path: Path) -> Path:
@@ -67,7 +84,7 @@ def remove_stale_output(path: Path) -> None:
 
 
 def remove_related_outputs(out_dir: Path, doc_path: Path, doc_type: str) -> None:
-    """Remove legacy Markdown outputs that would collide with the next run."""
+    """Remove legacy root-level Markdown outputs that would collide with the next run."""
 
     if not out_dir.exists():
         return
@@ -80,6 +97,23 @@ def remove_related_outputs(out_dir: Path, doc_path: Path, doc_type: str) -> None
     for path in out_dir.iterdir():
         if path.is_file() and path.suffix.lower() in {".md", ".txt"} and path.stem in candidates:
             path.unlink(missing_ok=True)
+        if path.is_dir() and path.suffix == ".assets" and path.stem in candidates:
+            shutil.rmtree(path, ignore_errors=True)
+
+
+def publish_markdown_bundle(staged_md_path: Path, published_md_path: Path) -> Path:
+    """Publish one Markdown file to the output root and gather its local assets."""
+
+    markdown = staged_md_path.read_text(encoding="utf-8")
+    published_md_path.parent.mkdir(parents=True, exist_ok=True)
+    assets_dir = make_published_assets_dir(published_md_path)
+    shutil.rmtree(assets_dir, ignore_errors=True)
+
+    rewritten_markdown = _rewrite_local_image_refs(markdown, staged_md_path.parent, assets_dir, published_md_path.parent)
+    published_md_path.write_text(rewritten_markdown, encoding="utf-8")
+    if assets_dir.exists() and not any(assets_dir.iterdir()):
+        assets_dir.rmdir()
+    return published_md_path
 
 
 def relocate_intermediate_markdown(source_root: Path, target_root: Path) -> list[Path]:
@@ -97,6 +131,45 @@ def relocate_intermediate_markdown(source_root: Path, target_root: Path) -> list
         source_path.replace(target_path)
         moved.append(target_path)
     return moved
+
+
+def _rewrite_local_image_refs(markdown: str, source_markdown_dir: Path, assets_dir: Path, published_root: Path) -> str:
+    """Copy local image refs into a sibling asset directory and rewrite links."""
+
+    copied_targets: dict[Path, Path] = {}
+
+    def _replace(match: re.Match[str]) -> str:
+        alt_text, ref = match.groups()
+        target = _resolve_local_ref(ref, source_markdown_dir)
+        if target is None or not target.exists():
+            return match.group(0)
+
+        published_asset_path = copied_targets.get(target)
+        if published_asset_path is None:
+            ref_path = Path(ref)
+            relative_asset_path = ref_path if not ref_path.is_absolute() else Path(ref_path.name)
+            published_asset_path = assets_dir / relative_asset_path
+            published_asset_path.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(target, published_asset_path)
+            copied_targets[target] = published_asset_path
+
+        rewritten_ref = published_asset_path.relative_to(published_root).as_posix()
+        return f"![{alt_text}]({rewritten_ref})"
+
+    return IMAGE_REF_RE.sub(_replace, markdown)
+
+
+def _resolve_local_ref(ref: str, source_markdown_dir: Path) -> Path | None:
+    """Resolve one Markdown image reference when it points at a local file."""
+
+    ref = ref.strip()
+    if not ref or "://" in ref or ref.startswith("#") or ref.startswith("data:"):
+        return None
+    ref_path = Path(ref)
+    if ref_path.is_absolute():
+        return ref_path if ref_path.exists() else None
+    target = (source_markdown_dir / ref_path).resolve()
+    return target if target.exists() else None
 
 
 def _infer_doc_id(doc_path: Path) -> str:
